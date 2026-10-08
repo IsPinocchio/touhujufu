@@ -1,0 +1,52 @@
+/* ============================================================
+   主题变量：换肤只需改这里
+   主色调：深红棕 + 米白 + 墨绿，中国传统器物感
+   ============================================================ */
+:root {
+  /* —— 主色 —— */
+  --color-ink: #2b2118; /* 深棕黑：主文字 */
+  --color-ink-soft: #57473a; /* 次级文字 */
+  --color-brown-dark: #4a2c1f; /* 深红棕 */
+  --color-brown: #7a4a2b;
+  --color-cream: #f4ead8; /* 米白 */
+  --color-cream-dark: #e6d5b8; /* 米白偏深 */
+  --color-green: #3f5c4a; /* 墨绿 */
+  --color-green-light: #6b8f7a;
+  --color-gold: #b8863f; /* 暗金（腐败壶诱惑感） */
+  --color-copper: #a9643a;
+  --color-grey-brown: #8a7a68; /* 灰褐（擦边壶） */
+  --color-red: #9e2b25; /* 印章红 */
+  --color-red-light: #c0504a;
+
+  /* —— 背景 —— */
+  --bg-top: #f7efe0;
+  --bg-bottom: #e7d8c0;
+
+  /* —— 字体 —— */
+  --font-serif: 'Noto Serif SC', 'Source Han Serif SC', 'STSong', 'SimSun', serif;
+  --font-sans: 'Noto Sans SC', 'Source Han Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+
+  /* —— 圆角 —— */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+
+  /* —— 阴影 —— */
+  --shadow-card: 0 6px 18px rgba(43, 33, 24, 0.18);
+  --shadow-float: 0 12px 32px rgba(43, 33, 24, 0.26);
+
+  /* —— 间距 —— */
+  --gap-xs: 4px;
+  --gap-sm: 8px;
+  --gap-md: 16px;
+  --gap-lg: 24px;
+  --gap-xl: 32px;
+
+  /* —— 安全区 —— */
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* —— 动效时长 —— */
+  --dur-fast: 0.18s;
+  --dur-base: 0.32s;
+  --dur-slow: 0.6s;
+}
