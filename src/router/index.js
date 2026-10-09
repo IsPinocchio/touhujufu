@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 
 import HomeView from '@/views/HomeView.vue'
+import GameHomeView from '@/views/GameHomeView.vue'
 import GameView from '@/views/GameView.vue'
 import ResultView from '@/views/ResultView.vue'
 import ComingSoon from '@/views/ComingSoon.vue'
@@ -8,11 +9,13 @@ import ComingSoon from '@/views/ComingSoon.vue'
 /**
  * 路由表：使用 hash 模式，纯前端静态部署无需服务端配置。
  * 首页为「廉动星球」3D 星球（bare 布局：隐藏全局顶栏/底栏）；
+ * /game 为投壶拒腐封面页（介绍 + 开始/继续），/game/play 为对局页；
  * /quiz、/ai、/me 为预留模块路由，后续替换为真实页面。
  */
 const routes = [
   { path: '/', name: 'home', component: HomeView, meta: { title: '首页', bare: true } },
-  { path: '/game', name: 'game', component: GameView, meta: { title: '投壶拒腐' } },
+  { path: '/game', name: 'game', component: GameHomeView, meta: { title: '投壶拒腐' } },
+  { path: '/game/play', name: 'gamePlay', component: GameView, meta: { title: '投壶拒腐' } },
   { path: '/result', name: 'result', component: ResultView, meta: { title: '结算' } },
   {
     path: '/quiz',

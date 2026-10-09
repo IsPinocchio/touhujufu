@@ -47,7 +47,7 @@ let hintTimer = null
 const debugSeq = ref(0)
 const debugThrows = ref([])
 const debugCards = computed(() =>
-  store.humanPlayer?.clueCards.map((c) => `${c.revealed ? '' : '反扣:'}${c.type}`).join(' '),
+  store.player?.clueCards.map((c) => `${c.revealed ? '' : '反扣:'}${c.type}`).join(' '),
 )
 
 // 底部状态提示文案（未选壶时引导；选壶后由蓄力条自带文案提示）
@@ -61,9 +61,12 @@ const HALF_ARROW_W = 11
 const CARD_HW = 36
 const CARD_HH = 50
 
-// —— 入场自动初始化 / 兜底跳转 ——
+// —— 入场兜底：无存档回封面页，已结束去结算页 ——
 onMounted(() => {
-  if (!store.players.length) store.initGame()
+  if (!store.player) {
+    router.replace('/game')
+    return
+  }
   if (store.phase === 'finished') router.replace('/result')
 })
 
@@ -71,7 +74,7 @@ onUnmounted(() => {
   clearTimeout(hintTimer)
 })
 
-/** 玩家松手投掷入口：单结果流程（已去除 AI 投壶） */
+/** 玩家松手投掷入口：单结果流程 */
 async function onThrow(result) {
   if (playing.value || store.phase !== 'playing') return
   playing.value = true
@@ -245,7 +248,7 @@ function onMidDismiss() {
 }
 function onConfess() {
   playSound('flip')
-  store.confess('human')
+  store.confess()
   store.dismissConfess()
 }
 function onSkipConfess() {
@@ -264,8 +267,8 @@ function onFinalDismiss() {
 
 <template>
   <div class="page game-page">
-    <!-- 记分表（可折叠） -->
-    <ScoreBoard :players="store.players" :round="store.round" />
+    <!-- 玩家信息栏 -->
+    <ScoreBoard :player="store.player" :round="store.round" />
 
     <!-- 场景卡 -->
     <SceneCard
@@ -302,12 +305,12 @@ function onFinalDismiss() {
     <InspectionModal
       v-if="store.phase === 'midInspection'"
       mode="mid"
-      :players="store.players"
+      :player="store.player"
       @dismiss="onMidDismiss"
     />
     <ConfessModal
       v-if="store.phase === 'confess'"
-      :player="store.humanPlayer"
+      :player="store.player"
       @confess="onConfess"
       @skip="onSkipConfess"
     />
@@ -319,7 +322,7 @@ function onFinalDismiss() {
     <InspectionModal
       v-if="store.phase === 'finalInspection'"
       mode="final"
-      :players="store.players"
+      :player="store.player"
       @dismiss="onFinalDismiss"
     />
 

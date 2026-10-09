@@ -9,16 +9,13 @@ import ClueCard from './ClueCard.vue'
 
 const props = defineProps({
   mode: { type: String, required: true }, // mid | final
-  players: { type: Array, required: true },
+  player: { type: Object, required: true },
 })
 
 const emit = defineEmits(['dismiss'])
 
 const isMid = computed(() => props.mode === 'mid')
-const human = computed(() => props.players.find((p) => !p.isAI))
-const humanClueCount = computed(
-  () => human.value?.clueCards.filter((c) => c.type === 'clue').length || 0,
-)
+const clueCount = computed(() => props.player.clueCards.filter((c) => c.type === 'clue').length)
 </script>
 
 <template>
@@ -32,33 +29,31 @@ const humanClueCount = computed(
 
       <div class="inspection__body">
         <p v-if="isMid" class="inspection__warn">
-          你已被发现 <strong class="inspection__count">{{ humanClueCount }}</strong> 条线索。
-          <template v-if="humanClueCount >= 1">
+          你已被发现 <strong class="inspection__count">{{ clueCount }}</strong> 条线索。
+          <template v-if="clueCount >= 1">
             <br /><strong class="inspection__marked">组织注意到你了</strong
             >——从下一轮起，你投中腐败/擦边壶时留下线索的概率将大幅提升。
           </template>
           <template v-else>目前你很干净，继续守住。</template>
         </p>
         <p v-else class="inspection__warn inspection__warn--final">
-          全员线索卡已全部翻开，将按线索数阶梯清算。
+          线索卡已全部翻开，将按线索数阶梯清算。
         </p>
 
-        <!-- 各玩家已翻开的线索卡 -->
-        <div class="inspection__players">
-          <div v-for="p in players" :key="p.id" class="inspection__player">
-            <span class="inspection__name">{{ p.name }}</span>
-            <div class="inspection__cards">
-              <template v-if="p.clueCards.length === 0">
-                <span class="inspection__none">无线索卡</span>
-              </template>
-              <ClueCard
-                v-for="(c, i) in p.clueCards"
-                :key="i"
-                :type="c.type"
-                :revealed="true"
-                :size="44"
-              />
-            </div>
+        <!-- 已翻开的线索卡 -->
+        <div class="inspection__player">
+          <span class="inspection__name">{{ player.name }}</span>
+          <div class="inspection__cards">
+            <template v-if="player.clueCards.length === 0">
+              <span class="inspection__none">无线索卡</span>
+            </template>
+            <ClueCard
+              v-for="(c, i) in player.clueCards"
+              :key="i"
+              :type="c.type"
+              :revealed="true"
+              :size="44"
+            />
           </div>
         </div>
 
@@ -144,11 +139,6 @@ const humanClueCount = computed(
   color: var(--color-red);
   font-size: 17px;
   letter-spacing: 0.06em;
-}
-.inspection__players {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-sm);
 }
 .inspection__player {
   display: flex;

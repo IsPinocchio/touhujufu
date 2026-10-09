@@ -19,13 +19,21 @@ const router = useRouter()
 const store = useGameStore()
 const isBare = computed(() => !!route.meta?.bare)
 
-// 重新游戏确认弹窗
+// 重新游戏 / 退出游戏确认弹窗
 const restartConfirm = ref(false)
+const quitConfirm = ref(false)
 
 function onRestart() {
   restartConfirm.value = false
   navOpen.value = false
   store.initGame()
+  router.push('/game/play')
+}
+
+function onQuit() {
+  quitConfirm.value = false
+  navOpen.value = false
+  store.quitGame()
   router.push('/game')
 }
 </script>
@@ -80,6 +88,14 @@ function onRestart() {
         >
           重新游戏
         </button>
+        <button
+          v-if="store.hasActiveGame"
+          class="global-nav__link global-nav__link--danger"
+          type="button"
+          @click="quitConfirm = true"
+        >
+          退出游戏
+        </button>
       </div>
     </nav>
   </Transition>
@@ -92,6 +108,18 @@ function onRestart() {
         <p class="restart-modal__sub">当前进度将清空，从第 1 轮重新开始</p>
         <button class="btn btn--primary btn--block" type="button" @click="onRestart">重新开始</button>
         <button class="btn btn--ghost btn--block" type="button" @click="restartConfirm = false">继续本局</button>
+      </div>
+    </div>
+  </Transition>
+
+  <!-- 退出游戏确认 -->
+  <Transition name="fade">
+    <div v-if="quitConfirm" class="restart-overlay" @click.self="quitConfirm = false">
+      <div class="restart-modal anim-pop-in" role="dialog" aria-modal="true">
+        <p class="restart-modal__title">退出游戏？</p>
+        <p class="restart-modal__sub">当前进度将清空，返回游戏封面</p>
+        <button class="btn btn--danger btn--block" type="button" @click="onQuit">退出游戏</button>
+        <button class="btn btn--ghost btn--block" type="button" @click="quitConfirm = false">继续本局</button>
       </div>
     </div>
   </Transition>

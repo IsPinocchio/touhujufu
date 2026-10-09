@@ -14,8 +14,8 @@ import ClueCard from './ClueCard.vue'
 
 const store = useGameStore()
 
-const cards = computed(() => store.humanPlayer?.clueCards ?? [])
-const score = computed(() => store.humanPlayer?.score ?? 0)
+const cards = computed(() => store.player?.clueCards ?? [])
+const score = computed(() => store.player?.score ?? 0)
 
 const root = ref(null)
 /** 供 GameView 的抽卡飞入动画定位落点 */
@@ -34,7 +34,7 @@ function onCardClick(card) {
 
 function confirm() {
   if (!pending.value) return
-  if (store.payToView('human', pending.value.id)) {
+  if (store.payToView(pending.value.id)) {
     playSound('flip')
   }
   pending.value = null

@@ -2,8 +2,9 @@
 /**
  * 结算与讲评页
  * - 玩家最终成绩、奖惩、廉洁文化课程
- * - 讲评（排名、侥幸逃脱者、被清零者、30 秒感受、收尾语）
+ * - 讲评（侥幸逃脱 / 被清零、30 秒感受、收尾语）
  * - 战绩分享、重玩
+ * - 与真实玩家的排名由后端服务提供（接入中）
  */
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
@@ -19,7 +20,7 @@ const store = useGameStore()
 const courseModalOpen = ref(false)
 const copied = ref(false)
 
-const human = computed(() => store.humanPlayer)
+const human = computed(() => store.player)
 const report = computed(() => store.finalReport)
 
 const penaltyLabel = {
@@ -58,8 +59,7 @@ const courseItems = computed(() => partyKnowledge.slice(0, Math.max(requiredCour
 const shareText = computed(() => {
   const h = human.value
   if (!h) return ''
-  const rankCn = ['', '一', '二', '三', '四'][h.rank] || h.rank
-  return `我在「投壶拒腐」中最终得分 ${h.score}，排名第 ${rankCn}（共 4 人），被巡视组发现 ${h.finalClueCount} 条线索（${penaltyLabel[h.penalty]}）。侥幸心理，害人不浅。`
+  return `我在「投壶拒腐」中最终得分 ${h.score}，被巡视组发现 ${h.finalClueCount} 条线索（${penaltyLabel[h.penalty]}）。侥幸心理，害人不浅。`
 })
 
 onMounted(() => {
@@ -86,7 +86,7 @@ async function copyShare() {
 
 function replay() {
   store.initGame()
-  router.push('/game')
+  router.push('/game/play')
 }
 
 function goHome() {
@@ -99,12 +99,6 @@ function goHome() {
   <div class="page result">
     <!-- 个人成绩卡 -->
     <section v-if="human" class="result__hero card anim-slide-down">
-      <div class="result__rank">
-        <span class="result__rank-num">#{{ human.rank }}</span>
-        <span v-if="human.rank === 1" class="result__medal">
-          <SvgIcon name="medal" :size="20" /> 清风标兵
-        </span>
-      </div>
       <div class="result__stats">
         <div class="result__stat">
           <span class="result__stat-val">{{ human.score }}</span>
@@ -142,7 +136,7 @@ function goHome() {
     </section>
 
     <!-- 讲评 -->
-    <GameOverSummary v-if="report" :report="report" human-id="human" />
+    <GameOverSummary v-if="report" :report="report" />
 
     <!-- 分享与操作 -->
     <div class="result__actions">
@@ -184,29 +178,6 @@ function goHome() {
   flex-direction: column;
   gap: var(--gap-md);
   text-align: center;
-}
-.result__rank {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--gap-md);
-}
-.result__rank-num {
-  font-family: var(--font-serif);
-  font-size: 44px;
-  font-weight: 700;
-  color: var(--color-brown-dark);
-}
-.result__medal {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: rgba(184, 134, 63, 0.18);
-  color: var(--color-gold);
-  font-weight: 700;
-  font-size: 14px;
 }
 .result__stats {
   display: flex;

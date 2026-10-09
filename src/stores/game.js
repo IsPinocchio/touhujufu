@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { scenes } from '@/data/scenes'
 import { quizQuestions } from '@/data/quiz'
-import { AI_CONFIG, PERSONALITY } from '@/data/ai'
 import {
   TOTAL_ROUNDS,
   CONFESS_ROUND,
@@ -19,25 +18,28 @@ import { loadJSON, saveJSON } from '@/utils/storage'
 const HISTORY_KEY = 'touhu_history'
 const MAX_HISTORY = 20
 
+// 讲评环节的 30 秒感受文案
+const HUMAN_FEELING = '这是我自己的选择。每一次投壶，其实都是我心里那点侥幸在作祟。'
+
 /**
  * 游戏核心 store
  * 状态机：phase 依次流转
  *  idle -> playing -> (quiz)* -> playing -> confess -> playing -> midInspection -> playing -> finalInspection -> finished
- * 投壶流程：选壶 -> 蓄力 -> 松手投掷（出手质量影响最终命中率）-> 抽卡 -> 可选付费查看 -> 法规判断题（第 2/4/6/8 轮）
- * 说明：当前暂时移除 AI 投壶，仅玩家本人投壶；AI 保留在名单中但不行动。
+ * 投壶流程：选壶 -> 蓄力 -> 松手投掷（指针落入高亮区间必中）-> 抽卡 -> 可选付费查看 -> 法规判断题（第 2/4/6/8 轮）
+ * 单人游戏：无 AI 对手；与真实玩家的排名由后端服务提供（接入中）。
  * 持久化到 localStorage，刷新后可继续上局。
  */
 export const useGameStore = defineStore('game', {
   state: () => ({
     round: 1, // 当前轮次 1~9
     phase: 'idle', // idle | playing | quiz | confess | midInspection | finalInspection | finished
-    players: [], // 4 名玩家（1 真人 + 3 AI）
+    player: null, // 玩家（单人）
     usedScenes: [], // 已用过的场景题 id
     usedQuizzes: [], // 已用过的判断题 id
     usedQuizRounds: [], // 已答过判断题的轮次（每轮最多一次）
     currentScene: null, // 当前轮场景（选项已打乱）
     currentQuiz: null, // 当前判断题
-    currentRoundResults: [], // 本轮投掷结果（当前仅玩家一人）
+    currentRoundResults: [], // 本轮投掷结果
     cardSeq: 0, // 线索卡发号器，保证卡片 id 唯一
     finalReport: null, // 最终结算与讲评数据
     startTime: null, // 开局时间戳
@@ -50,11 +52,9 @@ export const useGameStore = defineStore('game', {
   }),
 
   getters: {
-    humanPlayer: (state) => state.players.find((p) => !p.isAI),
-    aiPlayers: (state) => state.players.filter((p) => p.isAI),
-    hasActiveGame: (state) => state.phase !== 'idle' && state.players.length > 0,
-    // 组织注意到你了（中期巡察后线索 >= 1 的玩家被标记）
-    humanMarked: (state) => !!state.players.find((p) => !p.isAI)?.marked,
+    hasActiveGame: (state) => state.phase !== 'idle' && !!state.player,
+    // 组织注意到你了（中期巡察后线索 >= 1 即被标记）
+    humanMarked: (state) => !!state.player?.marked,
   },
 
   actions: {
@@ -78,22 +78,16 @@ export const useGameStore = defineStore('game', {
       this.bestZoneStart = 0
       this.bestZoneWidth = 0
 
-      // 1 名真人玩家 + 3 名 AI
-      this.players = [
-        this.createPlayer({ id: 'human', name: '你', isAI: false, personality: 'human' }),
-        ...AI_CONFIG.map((c) => this.createPlayer({ id: c.id, name: c.name, isAI: true, personality: c.personality })),
-      ]
+      this.player = this.createPlayer({ id: 'human', name: '你' })
 
       this.currentScene = this.pickScene()
     },
 
     /** 玩家对象工厂：统一字段，便于与后端玩家模型对齐 */
-    createPlayer({ id, name, isAI, personality }) {
+    createPlayer({ id, name }) {
       return {
         id,
         name,
-        isAI,
-        personality,
         score: 0, // 当前总分（付费查看会扣分）
         clueCards: [], // { id, type: 'safe'|'clue', revealed, pot }
         usedRiskyPot: false, // 是否投过腐败/擦边壶（用于清风奖与领学判定）
@@ -142,7 +136,7 @@ export const useGameStore = defineStore('game', {
       const inZone =
         releasePos >= this.bestZoneStart && releasePos <= this.bestZoneStart + this.bestZoneWidth
       const quality = calculateQuality(releasePos, this.bestZoneStart, this.bestZoneWidth)
-      const result = resolveThrow(this.selectedPot, inZone ? 1 : 0, this.humanPlayer?.marked)
+      const result = resolveThrow(this.selectedPot, inZone ? 1 : 0, this.player?.marked)
       return {
         ...result,
         quality,
@@ -158,11 +152,11 @@ export const useGameStore = defineStore('game', {
       this.isCharging = false
 
       const result = this.calculateHit(releasePos)
-      this.applyThrowResult(this.humanPlayer, result)
+      this.applyThrowResult(this.player, result)
 
       const enriched = {
-        playerId: this.humanPlayer.id,
-        name: this.humanPlayer.name,
+        playerId: this.player.id,
+        name: this.player.name,
         ...result,
       }
       this.currentRoundResults = [enriched]
@@ -211,10 +205,9 @@ export const useGameStore = defineStore('game', {
     /** 答完判断题后回调：答对获得一枚清风令，随后推进流程 */
     answerQuiz(correct) {
       if (this.phase !== 'quiz') return
-      const player = this.humanPlayer
       if (correct) {
-        player.breezeTokens += 1
-        player.correctQuizCount += 1
+        this.player.breezeTokens += 1
+        this.player.correctQuizCount += 1
       }
       this.usedQuizRounds.push(this.round)
       this.currentQuiz = null
@@ -228,10 +221,9 @@ export const useGameStore = defineStore('game', {
         // 主动交代窗口开启（第 4 轮结束）
         this.phase = 'confess'
       } else if (r === INSPECTION_ROUND) {
-        // 中期巡察：强制翻开所有线索卡，线索 >= 1 者被标记
+        // 中期巡察：强制翻开所有线索卡，线索 >= 1 即被标记
         this.revealAllCards()
-        const human = this.humanPlayer
-        human.marked = this.countClues(human) >= 1
+        this.player.marked = this.countClues(this.player) >= 1
         this.phase = 'midInspection'
       } else if (r === FINAL_ROUND) {
         // 最终巡视：先翻开全部线索卡供弹窗展示
@@ -259,13 +251,12 @@ export const useGameStore = defineStore('game', {
      * 费用按抽卡来源壶计：腐败壶 10 分、擦边壶 5 分；总分不足不能查看
      * @returns {boolean} 是否查看成功
      */
-    payToView(playerId, cardId) {
-      const player = this.players.find((p) => p.id === playerId)
-      const card = player?.clueCards.find((c) => c.id === cardId)
+    payToView(cardId) {
+      const card = this.player?.clueCards.find((c) => c.id === cardId)
       if (!card || card.revealed) return false
       const cost = VIEW_COST[card.pot] ?? 0
-      if (player.score < cost) return false
-      player.score -= cost
+      if (this.player.score < cost) return false
+      this.player.score -= cost
       card.revealed = true
       return true
     },
@@ -273,8 +264,8 @@ export const useGameStore = defineStore('game', {
     /**
      * 主动交代（方案 2.4）：扣除此前投腐败/擦边壶所得的全部分数，消除所有已抽线索卡
      */
-    confess(playerId) {
-      const player = this.players.find((p) => p.id === playerId)
+    confess() {
+      const player = this.player
       if (!player) return
       player.score -= player.riskyScore
       player.riskyScore = 0
@@ -287,16 +278,12 @@ export const useGameStore = defineStore('game', {
       this.advanceToNextRound()
     },
 
-    /** 最终巡视：翻开全部线索卡、清算、排名、生成讲评报告 */
+    /** 最终巡视：翻开全部线索卡、清算、生成讲评报告（排名由后端服务提供，接入中） */
     finalInspection() {
       this.revealAllCards()
-      this.players.forEach((p) => this.settlePlayer(p))
+      this.settlePlayer(this.player)
 
-      // 按清算后分数重新排名
-      const ranked = [...this.players].sort((a, b) => b.score - a.score)
-      ranked.forEach((p, i) => (p.rank = i + 1))
-
-      this.finalReport = this.buildReport(ranked)
+      this.finalReport = this.buildReport(this.player)
       this.phase = 'finished'
       this.saveHistory()
     },
@@ -331,17 +318,13 @@ export const useGameStore = defineStore('game', {
       }
     },
 
-    /** 构建讲评报告：侥幸逃脱者、被清零者、每人感受 */
-    buildReport(ranked) {
-      const escaped = ranked.filter((p) => p.usedRiskyPot && p.finalClueCount === 0)
-      const zeroed = ranked.filter((p) => p.finalClueCount >= 2)
-      const feelings = ranked.map((p) => ({
-        id: p.id,
-        name: p.name,
-        personality: p.personality,
-        feeling: PERSONALITY[p.personality]?.feeling || '',
-      }))
-      return { escaped, zeroed, feelings, ranked }
+    /** 构建讲评报告：是否侥幸逃脱、是否被清零、个人感受 */
+    buildReport(player) {
+      return {
+        escaped: player.usedRiskyPot && player.finalClueCount === 0,
+        zeroed: player.finalClueCount >= 2,
+        feeling: HUMAN_FEELING,
+      }
     },
 
     /** 统计某玩家的真实线索数 */
@@ -349,19 +332,18 @@ export const useGameStore = defineStore('game', {
       return player.clueCards.filter((c) => c.type === 'clue').length
     },
 
-    /** 翻开所有玩家的线索卡 */
+    /** 翻开玩家的全部线索卡 */
     revealAllCards() {
-      this.players.forEach((p) => p.clueCards.forEach((c) => (c.revealed = true)))
+      this.player?.clueCards.forEach((c) => (c.revealed = true))
     },
 
     /** 将本局结果追加到历史记录（最多保留 20 条） */
     saveHistory() {
-      const h = this.humanPlayer
+      const h = this.player
       const summary = {
         date: Date.now(),
         playerName: h.name,
         playerScore: h.score,
-        playerRank: h.rank,
         clueCount: h.finalClueCount,
         penalty: h.penalty,
         breezeTokens: h.breezeTokens,
@@ -380,7 +362,7 @@ export const useGameStore = defineStore('game', {
   },
 
   persist: {
-    key: 'touhu_game_state_v2',
+    key: 'touhu_game_state_v3',
     storage: localStorage,
   },
 })
