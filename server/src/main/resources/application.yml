@@ -1,0 +1,39 @@
+# 服务端配置文件：相当于前端的环境变量 + vite 配置
+# 线上部署时建议用环境变量覆盖敏感项，不要把真实密码提交到仓库
+
+server:
+  port: 8080 # 后端服务端口，前端通过 http://服务器IP:8080/api/... 访问
+
+spring:
+  application:
+    name: touhu-server
+  datasource:
+    # 数据库连接串：touhu 为数据库名，先在 MySQL 里执行 CREATE DATABASE touhu DEFAULT CHARSET utf8mb4;
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/touhu?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:123456}
+  sql:
+    init:
+      # 启动时自动执行建表脚本（脚本内均为 CREATE TABLE IF NOT EXISTS，重复执行无副作用）
+      mode: always
+      schema-locations: classpath:db/schema.sql
+      continue-on-error: true
+
+mybatis-plus:
+  configuration:
+    # 打印 SQL 日志，开发期排查问题用；上线后可改为 none
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true # 数据库下划线列名自动映射 Java 驼峰字段
+  global-config:
+    banner: false
+
+# 自定义配置
+touhu:
+  jwt:
+    # JWT 签名密钥：至少 32 个字符。线上务必用环境变量覆盖！
+    secret: ${JWT_SECRET:touhu-anti-corruption-secret-key-change-me-in-prod}
+    expire-days: 7 # 登录令牌有效期（天）
+  purge:
+    # 大清洗定时任务 cron：默认每周一凌晨 3 点执行
+    # 6 个字段依次为：秒 分 时 日 月 星期
+    cron: ${PURGE_CRON:0 0 3 * * MON}

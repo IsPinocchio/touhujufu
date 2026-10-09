@@ -6,9 +6,10 @@
  * - 承载 <router-view>
  * - 首页（meta.bare）为全屏沉浸式 3D 星球，隐藏顶栏/底栏/背景
  */
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/game'
+import { useAuthStore } from '@/stores/auth'
 import AppHeader from '@/components/common/AppHeader.vue'
 import AppFooter from '@/components/common/AppFooter.vue'
 
@@ -17,16 +18,29 @@ const navOpen = ref(false)
 const route = useRoute()
 const router = useRouter()
 const store = useGameStore()
+const auth = useAuthStore()
 const isBare = computed(() => !!route.meta?.bare)
+
+// 刷新页面后用本地 token 恢复登录态
+onMounted(() => {
+  auth.restore()
+})
+
+function onLogout() {
+  navOpen.value = false
+  store.quitGame()
+  auth.logout()
+  router.push('/login')
+}
 
 // 重新游戏 / 退出游戏确认弹窗
 const restartConfirm = ref(false)
 const quitConfirm = ref(false)
 
-function onRestart() {
+async function onRestart() {
   restartConfirm.value = false
   navOpen.value = false
-  store.initGame()
+  await store.initGame()
   router.push('/game/play')
 }
 
@@ -80,6 +94,15 @@ function onQuit() {
         <RouterLink to="/quiz" class="global-nav__link">知识竞赛</RouterLink>
         <RouterLink to="/ai" class="global-nav__link">AI 问答</RouterLink>
         <RouterLink to="/me" class="global-nav__link">我的</RouterLink>
+        <RouterLink v-if="!auth.isLoggedIn" to="/login" class="global-nav__link">登录</RouterLink>
+        <button
+          v-else
+          class="global-nav__link global-nav__link--danger"
+          type="button"
+          @click="onLogout"
+        >
+          退出登录（{{ auth.user?.displayName || '已登录' }}）
+        </button>
         <button
           v-if="store.hasActiveGame"
           class="global-nav__link global-nav__link--danger"

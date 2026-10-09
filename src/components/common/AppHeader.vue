@@ -1,8 +1,9 @@
 <script setup>
 /**
- * 顶部栏：标题 + 可折叠菜单按钮 + 音效开关
+ * 顶部栏：标题 + 当前用户按钮 + 可折叠菜单按钮 + 音效开关
  */
 import { useSettingsStore } from '@/stores/settings'
+import { useAuthStore } from '@/stores/auth'
 import { setAudioEnabled } from '@/utils/audio'
 import SvgIcon from './SvgIcon.vue'
 
@@ -12,6 +13,7 @@ defineProps({
 const emit = defineEmits(['update:open'])
 
 const settings = useSettingsStore()
+const auth = useAuthStore()
 
 function toggleSound() {
   settings.toggleSound()
@@ -27,6 +29,17 @@ function toggleSound() {
     </RouterLink>
 
     <div class="app-header__actions">
+      <!-- 当前登录用户：点击展开菜单（退出登录在菜单里） -->
+      <button
+        v-if="auth.isLoggedIn"
+        class="app-header__user"
+        type="button"
+        :title="`当前登录：${auth.user?.displayName || ''}`"
+        @click="emit('update:open', !open)"
+      >
+        <span class="app-header__avatar">{{ (auth.user?.displayName || '…').slice(0, 1) }}</span>
+        <span class="app-header__username">{{ auth.user?.displayName || '…' }}</span>
+      </button>
       <button
         class="icon-btn"
         type="button"
@@ -86,6 +99,39 @@ function toggleSound() {
   display: flex;
   align-items: center;
   gap: var(--gap-sm);
+}
+.app-header__user {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 20px;
+  background: rgba(244, 234, 216, 0.7);
+  color: var(--color-brown-dark);
+  transition: background var(--dur-fast) ease;
+}
+.app-header__user:active {
+  background: var(--color-cream-dark);
+}
+.app-header__avatar {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--color-green);
+  color: var(--color-cream);
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 700;
+}
+.app-header__username {
+  font-size: 14px;
+  font-weight: 600;
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .icon-btn {
   display: grid;

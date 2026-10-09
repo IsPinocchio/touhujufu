@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 
 import HomeView from '@/views/HomeView.vue'
+import LoginView from '@/views/LoginView.vue'
 import GameHomeView from '@/views/GameHomeView.vue'
 import GameView from '@/views/GameView.vue'
 import ResultView from '@/views/ResultView.vue'
@@ -14,6 +15,7 @@ import ComingSoon from '@/views/ComingSoon.vue'
  */
 const routes = [
   { path: '/', name: 'home', component: HomeView, meta: { title: '首页', bare: true } },
+  { path: '/login', name: 'login', component: LoginView, meta: { title: '登录' } },
   { path: '/game', name: 'game', component: GameHomeView, meta: { title: '投壶拒腐' } },
   { path: '/game/play', name: 'gamePlay', component: GameView, meta: { title: '投壶拒腐' } },
   { path: '/result', name: 'result', component: ResultView, meta: { title: '结算' } },
@@ -55,6 +57,21 @@ const router = createRouter({
 router.afterEach((to) => {
   const base = '廉动星球'
   document.title = to.meta?.title ? `${to.meta.title} · ${base}` : base
+})
+
+// 登录守卫：除登录页外，所有页面都要求登录；未登录跳登录页，登录后按 redirect 跳回（默认首页）
+// 注意：守卫里不能用 useAuthStore() 顶部导入（pinia 可能尚未激活），改为动态读取 token
+import { getToken } from '@/utils/api'
+
+router.beforeEach((to) => {
+  if (to.path === '/login') {
+    // 已登录用户访问登录页，直接回首页
+    return getToken() ? '/' : true
+  }
+  if (!getToken()) {
+    return { path: '/login', query: to.fullPath === '/' ? {} : { redirect: to.fullPath } }
+  }
+  return true
 })
 
 export default router

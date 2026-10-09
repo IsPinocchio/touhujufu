@@ -84,8 +84,8 @@ async function copyShare() {
   setTimeout(() => (copied.value = false), 2000)
 }
 
-function replay() {
-  store.initGame()
+async function replay() {
+  await store.initGame()
   router.push('/game/play')
 }
 

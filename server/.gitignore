@@ -1,0 +1,19 @@
+# ---- Java 编译产物 ----
+target/
+*.class
+*.jar
+
+# ---- IDE ----
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.vscode/
+
+# ---- 日志与本地文件 ----
+logs/
+*.log
+
+# ---- 环境变量文件（含密钥，绝不提交） ----
+.env

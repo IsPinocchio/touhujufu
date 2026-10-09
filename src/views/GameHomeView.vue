@@ -7,17 +7,24 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/game'
+import { useAuthStore } from '@/stores/auth'
 import { corruptClueOdds } from '@/utils/probability'
 
 const router = useRouter()
 const game = useGameStore()
+const auth = useAuthStore()
 
 // 是否有可继续的存档
 const hasSave = computed(() => game.hasActiveGame)
 const odds = computed(() => (corruptClueOdds() * 100).toFixed(1))
 
-function startNew() {
-  game.initGame()
+async function startNew() {
+  // 未登录先去登录，登录后回到本页
+  if (!auth.isLoggedIn) {
+    router.push({ path: '/login', query: { redirect: '/game' } })
+    return
+  }
+  await game.initGame()
   router.push('/game/play')
 }
 

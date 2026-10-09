@@ -14,6 +14,13 @@ import {
 } from '@/data/config'
 import { POTS, resolveThrow, shuffle, calculateQuality, evaluateQuality } from '@/utils/probability'
 import { loadJSON, saveJSON } from '@/utils/storage'
+import { api } from '@/utils/api'
+
+// 上报队列：串行发送，保证服务端按轮次顺序校验通过；单条失败仅记日志，不阻断游戏
+let reportQueue = Promise.resolve()
+function enqueueReport(fn) {
+  reportQueue = reportQueue.then(fn).catch((e) => console.warn('[投壶拒腐] 数据上报失败', e))
+}
 
 const HISTORY_KEY = 'touhu_history'
 const MAX_HISTORY = 20
@@ -43,6 +50,7 @@ export const useGameStore = defineStore('game', {
     cardSeq: 0, // 线索卡发号器，保证卡片 id 唯一
     finalReport: null, // 最终结算与讲评数据
     startTime: null, // 开局时间戳
+    sessionId: null, // 后端对局 id（未登录或开局上报失败时为 null，本局不上榜）
 
     // —— 蓄力相关状态 ——
     selectedPot: null, // 当前选中的壶（corrupt | edge | clean | null）
@@ -58,8 +66,8 @@ export const useGameStore = defineStore('game', {
   },
 
   actions: {
-    /** 初始化一局新游戏 */
-    initGame() {
+    /** 初始化一局新游戏（同时向后端开局；失败则离线游玩不上榜） */
+    async initGame() {
       console.info(`[投壶拒腐] v${APP_VERSION} · 新开局`)
       this.usedScenes = []
       this.usedQuizzes = []
@@ -71,6 +79,7 @@ export const useGameStore = defineStore('game', {
       this.currentRoundResults = []
       this.currentQuiz = null
       this.cardSeq = 0
+      this.sessionId = null
 
       // 重置蓄力状态
       this.selectedPot = null
@@ -79,6 +88,18 @@ export const useGameStore = defineStore('game', {
       this.bestZoneWidth = 0
 
       this.player = this.createPlayer({ id: 'human', name: '你' })
+
+      // 后端开局：服务端同一时刻只允许一局 PLAYING，先放弃残留对局再开新局
+      try {
+        const current = await api.currentSession()
+        if (current?.sessionId) {
+          await api.abandonSession(current.sessionId)
+        }
+        const session = await api.startSession()
+        this.sessionId = session.sessionId
+      } catch (e) {
+        console.warn('[投壶拒腐] 开局上报失败，本局成绩将不计入排名', e)
+      }
 
       this.currentScene = this.pickScene()
     },
@@ -154,6 +175,20 @@ export const useGameStore = defineStore('game', {
       const result = this.calculateHit(releasePos)
       this.applyThrowResult(this.player, result)
 
+      // 上报本轮投掷（入队串行发送，失败不阻断游戏）
+      if (this.sessionId) {
+        const sid = this.sessionId
+        const payload = {
+          roundNo: this.round,
+          sceneId: this.currentScene?.id != null ? String(this.currentScene.id) : null,
+          potType: result.potType.toUpperCase(),
+          pointerPos: releasePos,
+          inZone: result.hit, // 确定性判定：命中即指针落入区间
+          cardType: result.cardType ? result.cardType.toUpperCase() : 'NONE',
+        }
+        enqueueReport(() => api.reportThrow(sid, payload))
+      }
+
       const enriched = {
         playerId: this.player.id,
         name: this.player.name,
@@ -182,6 +217,7 @@ export const useGameStore = defineStore('game', {
             type: result.cardType,
             revealed: false,
             pot: result.potType,
+            round: this.round, // 抽卡所在轮次（付费查看上报要用）
           })
         }
       }
@@ -208,6 +244,15 @@ export const useGameStore = defineStore('game', {
       if (correct) {
         this.player.breezeTokens += 1
         this.player.correctQuizCount += 1
+      }
+      if (this.sessionId) {
+        const sid = this.sessionId
+        const payload = {
+          roundNo: this.round,
+          quizId: this.currentQuiz?.id != null ? String(this.currentQuiz.id) : null,
+          correct: !!correct,
+        }
+        enqueueReport(() => api.reportQuiz(sid, payload))
       }
       this.usedQuizRounds.push(this.round)
       this.currentQuiz = null
@@ -258,6 +303,11 @@ export const useGameStore = defineStore('game', {
       if (this.player.score < cost) return false
       this.player.score -= cost
       card.revealed = true
+      if (this.sessionId) {
+        const sid = this.sessionId
+        const roundNo = card.round ?? this.round
+        enqueueReport(() => api.reportCardView(sid, { roundNo }))
+      }
       return true
     },
 
@@ -271,6 +321,10 @@ export const useGameStore = defineStore('game', {
       player.riskyScore = 0
       player.clueCards = []
       player.confessed = true
+      if (this.sessionId) {
+        const sid = this.sessionId
+        enqueueReport(() => api.confess(sid))
+      }
     },
 
     /** 主动交代环节结束：进入下一轮 */
@@ -278,14 +332,31 @@ export const useGameStore = defineStore('game', {
       this.advanceToNextRound()
     },
 
-    /** 最终巡视：翻开全部线索卡、清算、生成讲评报告（排名由后端服务提供，接入中） */
-    finalInspection() {
+    /** 最终巡视：翻开全部线索卡、清算、生成讲评报告（服务端重算为权威结果） */
+    async finalInspection() {
       this.revealAllCards()
       this.settlePlayer(this.player)
 
       this.finalReport = this.buildReport(this.player)
       this.phase = 'finished'
       this.saveHistory()
+
+      // 等此前的投掷/答题/交代全部上报完，再请求服务端清算
+      if (this.sessionId) {
+        const sid = this.sessionId
+        try {
+          await reportQueue
+          const server = await api.finishSession(sid)
+          this.finalReport = { ...this.finalReport, server }
+          // 以服务端权威分数为准（本地计算与之理论上一致，仅作展示兜底）
+          this.player.score = server.finalScore
+          this.player.finalClueCount = server.clueCount
+          this.player.penalty = server.penalty.toLowerCase()
+        } catch (e) {
+          console.warn('[投壶拒腐] 终局清算上报失败，展示本地结算结果', e)
+          this.finalReport = { ...this.finalReport, serverFailed: true }
+        }
+      }
     },
 
     /** 对单个玩家按线索数阶梯清算，并叠加清风令奖励 */
@@ -355,9 +426,14 @@ export const useGameStore = defineStore('game', {
       saveJSON(HISTORY_KEY, list.slice(0, MAX_HISTORY))
     },
 
-    /** 退出/重置本局 */
+    /** 退出/重置本局（同时放弃服务器上的对局） */
     quitGame() {
+      const sid = this.sessionId
+      const active = this.phase === 'playing' || this.phase === 'quiz' || this.phase === 'confess' || this.phase === 'midInspection'
       this.$reset()
+      if (sid && active) {
+        enqueueReport(() => api.abandonSession(sid))
+      }
     },
   },
 

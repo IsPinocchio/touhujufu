@@ -16,3 +16,6 @@ yarn-error.log*
 # 内部策划文档（含内部材料，不入库）
 *.pdf
 
+
+# 后端构建产物
+server/target/
