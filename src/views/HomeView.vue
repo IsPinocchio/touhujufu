@@ -1,154 +1,322 @@
 <script setup>
 /**
- * 首页 / 游戏入口
- * - 展示标题、规则简介
- * - 开始游戏 / 继续上局（如有存档）
+ * 廉动星球 · 首页
+ * 全屏沉浸式的 3D 星球：表面四块功能大陆，点击 / 拖动进入对应模块。
+ * 底部提供模块清单（星球标签被转走时的兜底入口）。
  */
-import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/game'
-import { corruptClueOdds } from '@/utils/probability'
+import PlanetSphere from '@/components/planet/PlanetSphere.vue'
 
 const router = useRouter()
 const game = useGameStore()
 
-// 是否有可继续的存档
-const hasSave = computed(() => game.hasActiveGame)
-const odds = computed(() => (corruptClueOdds() * 100).toFixed(1))
+// 四块功能大陆：经纬度重新拉开（投壶拒腐与 AI 问答对跖分布），形状各不相同
+const MODULES = [
+  { key: 'game', name: '投壶拒腐', glyph: '壶', color: '#b03a30', desc: '九轮情景投壶', route: '/game', lat: 14, lon: -40 },
+  { key: 'quiz', name: '知识竞赛', glyph: '赛', color: '#4a7a58', desc: '党纪党规答题', route: '/quiz', lat: 46, lon: 70 },
+  { key: 'ai', name: 'AI 问答', glyph: '智', color: '#46618f', desc: '廉洁知识助手', route: '/ai', lat: -14, lon: 140 },
+  { key: 'me', name: '我的', glyph: '我', color: '#c09a4a', desc: '成绩与成就', route: '/me', lat: -38, lon: -105 },
+]
 
-function startNew() {
-  game.initGame()
-  router.push('/game')
-}
-
-function continueGame() {
-  router.push('/game')
+function enter(m) {
+  router.push(m.route)
 }
 </script>
 
 <template>
-  <div class="page home">
-    <!-- 标题区 -->
-    <header class="home__hero anim-slide-down">
-      <div class="home__seal">廉</div>
-      <h1 class="home__title">投壶拒腐</h1>
-      <p class="home__subtitle">廉洁教育互动游戏 · 星网数科党管干部专场</p>
+  <div class="planet-home">
+    <!-- 云气微光 -->
+    <div class="planet-home__nebula" aria-hidden="true" />
+
+    <!-- 背景装饰：祥云 / 竹枝 / 星芒 -->
+    <div class="planet-home__ornaments" aria-hidden="true">
+      <!-- 左上竹枝 -->
+      <svg class="orn-bamboo orn-bamboo--tl" viewBox="0 0 200 200" fill="none"
+        stroke="rgba(107,143,122,0.35)" stroke-width="3" stroke-linecap="round">
+        <path d="M20 60 C40 30 60 90 80 20" />
+        <path d="M44 40 L58 28 M60 58 L72 46 M78 34 L92 22" />
+        <path d="M120 20 C140 60 160 30 180 70" />
+        <path d="M148 34 L162 44 M166 26 L180 36" />
+      </svg>
+      <!-- 右下竹枝 -->
+      <svg class="orn-bamboo orn-bamboo--br" viewBox="0 0 200 200" fill="none"
+        stroke="rgba(122,74,43,0.28)" stroke-width="3" stroke-linecap="round">
+        <path d="M180 140 C160 170 140 110 120 180" />
+        <path d="M156 160 L142 172 M140 142 L128 154" />
+        <path d="M80 180 C60 140 40 170 20 130" />
+        <path d="M52 166 L38 156 M34 174 L20 164" />
+      </svg>
+      <!-- 祥云 -->
+      <svg class="orn-cloud orn-cloud--l" viewBox="0 0 120 60" fill="none"
+        stroke="rgba(184,134,63,0.45)" stroke-width="2.4" stroke-linecap="round">
+        <path d="M14 46 h92" />
+        <path d="M22 46 c-9 0-13-10-6-16 c5-5 12-4 16 1 c2-12 20-14 25-3 c11-7 25 2 20 13 c9-2 16 4 14 11" />
+        <path d="M44 46 c0-7 11-7 11 0 c0 5-7 5-7 0" />
+      </svg>
+      <svg class="orn-cloud orn-cloud--r" viewBox="0 0 120 60" fill="none"
+        stroke="rgba(158,43,37,0.3)" stroke-width="2.4" stroke-linecap="round">
+        <path d="M14 46 h92" />
+        <path d="M22 46 c-9 0-13-10-6-16 c5-5 12-4 16 1 c2-12 20-14 25-3 c11-7 25 2 20 13 c9-2 16 4 14 11" />
+        <path d="M44 46 c0-7 11-7 11 0 c0 5-7 5-7 0" />
+      </svg>
+      <!-- 闪烁星芒 -->
+      <span class="sparkle sparkle--1">✦</span>
+      <span class="sparkle sparkle--2">✦</span>
+      <span class="sparkle sparkle--3">✦</span>
+      <span class="sparkle sparkle--4">✦</span>
+      <span class="sparkle sparkle--5">✦</span>
+    </div>
+
+    <!-- 3D 星球 -->
+    <PlanetSphere :modules="MODULES" @select="enter" />
+
+    <!-- 品牌区 -->
+    <header class="planet-home__brand">
+      <div class="planet-home__seal">廉</div>
+      <h1 class="planet-home__title">廉动星球</h1>
+      <p class="planet-home__slogan">廉于心 · 动于行 · 守廉如守护一颗星</p>
     </header>
 
-    <!-- 主题引言 -->
-    <section class="home__intro card anim-slide-up">
-      <p class="home__quote">
-        腐败容易、守廉难——但只要你一直伸手，<br />
-        <strong>被抓只是时间问题。</strong>
+    <!-- 底部：操作提示 + 模块清单 -->
+    <footer class="planet-home__dock">
+      <p class="planet-home__hint">
+        <span class="planet-home__hint-icon" aria-hidden="true">✦</span>
+        拖动星球旋转 · 点击大陆进入模块
       </p>
-    </section>
-
-    <!-- 规则简介 -->
-    <section class="home__rules card anim-slide-up">
-      <h2 class="home__heading">规则简介</h2>
-      <ul class="home__list">
-        <li>共 <strong>9 轮</strong>场景抉择，你与 3 名 AI 对手同场竞技。</li>
-        <li>每轮选择投向一个壶：<strong>腐败壶</strong>（口大易中，得分高）、<strong>擦边壶</strong>、<strong>廉洁壶</strong>（口小难中，得分低）。</li>
-        <li>命中腐败 / 擦边壶必抽一张<strong>线索卡</strong>扣在桌上——可以花钱查看，也可以赌它没事。</li>
-        <li>第 2/4/6/8 轮穿插<strong>法规判断题</strong>，答对得一枚清风令，最终清算每枚 +10 分。</li>
-        <li>第 4 轮后可<strong>主动交代</strong>；第 5 轮后<strong>中期巡察</strong>强制翻卡，有线索者将被「组织关注」，之后留下线索的概率大增。</li>
-        <li>第 9 轮后<strong>最终巡视</strong>：0 条线索平安着陆，1 条减半，2 条及以上清零。</li>
-      </ul>
-      <p class="home__note">
-        腐败壶单次投掷实际留下线索的综合概率约为 <strong class="home__odds">{{ odds }}%</strong>——这是你手里的“赔率表”。
-      </p>
-    </section>
-
-    <!-- 操作区 -->
-    <div class="home__actions anim-slide-up">
-      <button v-if="hasSave" class="btn btn--green btn--block" type="button" @click="continueGame">
-        继续上局
-      </button>
-      <button class="btn btn--primary btn--block" type="button" @click="startNew">
-        {{ hasSave ? '重新开始' : '开始游戏' }}
-      </button>
-      <RouterLink to="/learn" class="btn btn--ghost btn--block">党纪党规学习</RouterLink>
-    </div>
+      <div class="planet-home__modules">
+        <button
+          v-for="m in MODULES"
+          :key="m.key"
+          type="button"
+          class="dock-module"
+          @click="enter(m)"
+        >
+          <span class="dock-module__text">
+            <span class="dock-module__name">
+              {{ m.name }}
+              <em v-if="m.key === 'game' && game.hasActiveGame" class="dock-module__badge">进行中</em>
+            </span>
+            <span class="dock-module__desc">{{ m.desc }}</span>
+          </span>
+        </button>
+      </div>
+    </footer>
   </div>
 </template>
 
 <style scoped>
-.home {
-  gap: var(--gap-lg);
+.planet-home {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  /* 暖纸底色：与投壶拒腐游戏页同源的米白暖调 */
+  background: radial-gradient(120% 90% at 50% 0%, #f8f0df 0%, #efdfc2 58%, #e0c89e 100%);
 }
-.home__hero {
-  text-align: center;
-  padding: var(--gap-xl) 0 var(--gap-md);
+
+/* 云气微光 */
+.planet-home__nebula {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(38% 26% at 18% 22%, rgba(184, 134, 63, 0.12), transparent 70%),
+    radial-gradient(42% 30% at 84% 68%, rgba(107, 143, 122, 0.12), transparent 70%),
+    radial-gradient(30% 22% at 66% 12%, rgba(192, 80, 74, 0.07), transparent 70%);
 }
-.home__seal {
+
+/* —— 背景装饰 —— */
+.planet-home__ornaments {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.orn-bamboo {
+  position: absolute;
+  width: 180px;
+  height: 180px;
+}
+.orn-bamboo--tl {
+  top: -20px;
+  left: -30px;
+}
+.orn-bamboo--br {
+  bottom: -16px;
+  right: -26px;
+}
+.orn-cloud {
+  position: absolute;
+  width: 132px;
+  height: 66px;
+  animation: cloud-drift 7s ease-in-out infinite;
+}
+.orn-cloud--l {
+  top: 19%;
+  left: 5%;
+}
+.orn-cloud--r {
+  top: 58%;
+  right: 4%;
+  animation-delay: -3.2s;
+}
+@keyframes cloud-drift {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(10px); }
+}
+.sparkle {
+  position: absolute;
+  color: var(--color-gold);
+  font-size: 13px;
+  animation: hint-twinkle 2.8s ease-in-out infinite;
+}
+.sparkle--1 { top: 13%; right: 18%; animation-delay: 0s; }
+.sparkle--2 { top: 30%; left: 12%; font-size: 9px; animation-delay: 0.7s; }
+.sparkle--3 { top: 46%; right: 9%; font-size: 11px; animation-delay: 1.3s; }
+.sparkle--4 { top: 66%; left: 16%; animation-delay: 1.9s; }
+.sparkle--5 { top: 24%; left: 30%; font-size: 8px; animation-delay: 2.4s; }
+
+/* —— 品牌区 —— */
+.planet-home__brand {
+  position: absolute;
+  top: calc(var(--gap-lg) + env(safe-area-inset-top, 0px));
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+  z-index: 5;
+}
+.planet-home__seal {
   display: grid;
   place-items: center;
-  width: 56px;
-  height: 56px;
-  margin: 0 auto var(--gap-sm);
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
   background: var(--color-red);
   color: var(--color-cream);
   font-family: var(--font-serif);
-  font-size: 34px;
+  font-size: 26px;
   font-weight: 700;
-  box-shadow: var(--shadow-card);
+  box-shadow: 0 0 24px rgba(158, 43, 37, 0.55);
+  animation: seal-breathe 3.6s ease-in-out infinite;
 }
-.home__title {
-  font-size: 34px;
-  letter-spacing: 0.18em;
+@keyframes seal-breathe {
+  0%, 100% { box-shadow: 0 0 16px rgba(158, 43, 37, 0.45); }
+  50% { box-shadow: 0 0 30px rgba(158, 43, 37, 0.75); }
+}
+.planet-home__title {
+  font-family: var(--font-serif);
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  text-indent: 0.32em; /* 视觉居中补偿字间距 */
   color: var(--color-brown-dark);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
 }
-.home__subtitle {
-  margin-top: var(--gap-xs);
-  font-size: 13px;
+.planet-home__slogan {
+  font-size: 12px;
+  letter-spacing: 0.22em;
   color: var(--color-ink-soft);
 }
-.home__quote {
-  text-align: center;
-  font-family: var(--font-serif);
-  font-size: 17px;
-  line-height: 1.9;
-}
-.home__quote strong {
-  color: var(--color-red);
-}
-.home__heading {
-  font-size: 18px;
-  margin-bottom: var(--gap-sm);
-  color: var(--color-brown-dark);
-  letter-spacing: 0.08em;
-}
-.home__list {
-  list-style: none;
+
+/* —— 底部停靠区 —— */
+.planet-home__dock {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--gap-md) + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  font-size: 14px;
-  line-height: 1.7;
+  align-items: center;
+  gap: var(--gap-md);
+  padding: 0 var(--gap-md);
+  z-index: 5;
 }
-.home__list li::before {
-  content: '·';
-  margin-right: 8px;
-  color: var(--color-red);
-  font-weight: 700;
-}
-.home__note {
-  margin-top: var(--gap-md);
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  background: rgba(184, 134, 63, 0.12);
-  font-size: 13px;
-  line-height: 1.7;
-}
-.home__odds {
-  color: var(--color-red);
-  font-family: var(--font-serif);
-  font-size: 16px;
-}
-.home__actions {
+.planet-home__hint {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: var(--color-ink-soft);
+}
+.planet-home__hint-icon {
+  color: #d4af6a;
+  animation: hint-twinkle 2.4s ease-in-out infinite;
+}
+@keyframes hint-twinkle {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.planet-home__modules {
+  width: 100%;
+  max-width: 480px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--gap-sm);
+}
+.dock-module {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 4px;
+  border-radius: var(--radius-md);
+  background: rgba(250, 244, 230, 0.85);
+  border: 1px solid rgba(122, 74, 43, 0.16);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease,
+    transform var(--dur-fast) ease;
+}
+.dock-module:active {
+  transform: scale(0.96);
+  border-color: rgba(184, 134, 63, 0.6);
+  background: #faf0da;
+}
+.dock-module__text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.dock-module__name {
+  position: relative;
+  font-family: var(--font-serif);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-brown-dark);
+}
+.dock-module__badge {
+  position: absolute;
+  top: -4px;
+  right: -26px;
+  font-size: 9px;
+  font-style: normal;
+  letter-spacing: 0.04em;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--color-red);
+  color: var(--color-cream);
+  animation: hint-twinkle 1.8s ease-in-out infinite;
+}
+.dock-module__desc {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--color-ink-soft);
+  transform: scale(0.92);
+}
+
+@media (max-height: 620px) {
+  .planet-home__slogan,
+  .dock-module__desc {
+    display: none;
+  }
 }
 </style>

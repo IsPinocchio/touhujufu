@@ -22,7 +22,7 @@ const icons = {
   course: 'M4 6h16v12H4zM8 6V4M12 6V4M16 6V4M7 11h10M7 14h6',
   flag: 'M5 21V4M5 4h11l-2 3 2 3H5',
   rank: 'M8 21h8M12 17v4M7 4h10l-3 5 3 5H7z',
-  refresh: 'M20 11A8 8 0 1 0 18.34 5M20 3v5h-5',
+  refresh: 'M20 4v6h-6M20.49 15a9 9 0 1 1-2.12-9.36L20 10',
   check: 'M5 13l4 4L19 7',
   clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 3',
 }

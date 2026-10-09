@@ -39,9 +39,16 @@ function setPotEl(type) {
   }
 }
 
+const powerBarRef = ref(null)
+
 /** 返回指定壶的口部定位元素（用于箭头落点计算） */
 function getPotMouthEl(type) {
   return potEls[type] || null
+}
+
+/** 返回蓄力按钮元素（用于箭飞行起点计算） */
+function getPowerBtnEl() {
+  return powerBarRef.value?.btnEl() || null
 }
 
 /** 触发指定壶的命中震动 */
@@ -52,7 +59,7 @@ function shake(type) {
   }, 420)
 }
 
-defineExpose({ getPotMouthEl, shake })
+defineExpose({ getPotMouthEl, getPowerBtnEl, shake })
 
 /** 当前场景选项文字按 pot 字段映射到壶上 */
 function optionText(type) {
@@ -82,39 +89,42 @@ function onRelease(pos) {
 
 <template>
   <div class="pot-board">
-    <div
-      v-for="type in POT_KEYS"
-      :key="type"
-      class="pot-slot"
-      :class="`pot-slot--${type}`"
-      :data-pot-type="type"
-    >
-      <button
-        type="button"
-        class="pot-btn"
-        :disabled="disabled"
-        :aria-label="`投掷到${POTS[type].name}`"
-        @click="onSelect(type)"
+    <div class="pot-board__pots">
+      <div
+        v-for="type in POT_KEYS"
+        :key="type"
+        class="pot-slot"
+        :class="`pot-slot--${type}`"
+        :data-pot-type="type"
       >
-        <span class="pot-btn__pot" :ref="setPotEl(type)">
-          <Pot
-            :type="type"
-            :size="POT_SIZE[type]"
-            :shaking="shaking[type]"
-            :selected="isSelected(type)"
-            :charging="isCharging(type)"
-            :dimmed="isDimmed(type)"
-          />
-        </span>
-        <span class="pot-btn__text" :class="`pot-btn__text--${type}`" :data-selected="isSelected(type)">
-          {{ optionText(type) }}
-        </span>
-      </button>
+        <button
+          type="button"
+          class="pot-btn"
+          :disabled="disabled"
+          :aria-label="`投掷到${POTS[type].name}`"
+          @click="onSelect(type)"
+        >
+          <span class="pot-btn__pot" :ref="setPotEl(type)">
+            <Pot
+              :type="type"
+              :size="POT_SIZE[type]"
+              :shaking="shaking[type]"
+              :selected="isSelected(type)"
+              :charging="isCharging(type)"
+              :dimmed="isDimmed(type)"
+            />
+          </span>
+          <span class="pot-btn__text" :class="`pot-btn__text--${type}`" :data-selected="isSelected(type)">
+            {{ optionText(type) }}
+          </span>
+        </button>
+      </div>
     </div>
 
-    <!-- 蓄力条：选壶后出现在底部中央 -->
+    <!-- 蓄力条：选壶后出现在壶区下方 -->
     <PowerBar
       v-if="store.selectedPot"
+      ref="powerBarRef"
       :key="store.selectedPot"
       :pot-type="store.selectedPot"
       :zone-start="store.bestZoneStart"
@@ -130,14 +140,19 @@ function onRelease(pos) {
 <style scoped>
 .pot-board {
   display: flex;
-  align-items: stretch;
-  justify-content: center;
-  gap: var(--gap-sm);
+  flex-direction: column;
+  gap: var(--gap-md);
   padding: var(--gap-md) 0;
   width: 100%;
 }
 
-/* 三列等宽，便于选项文字排布；壶本身近大远小 */
+/* 三壶一行：三列等宽，便于选项文字排布；壶本身近大远小 */
+.pot-board__pots {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: var(--gap-sm);
+}
 .pot-slot {
   flex: 1 1 0;
   min-width: 0;
@@ -196,7 +211,7 @@ function onRelease(pos) {
   background: rgba(230, 184, 96, 0.16);
 }
 .pot-btn__text--edge {
-  background: rgba(201, 185, 165, 0.16);
+  background: rgba(168, 188, 208, 0.16);
 }
 .pot-btn__text--clean {
   background: rgba(143, 179, 154, 0.16);
@@ -210,8 +225,8 @@ function onRelease(pos) {
   border-color: rgba(184, 134, 63, 0.7);
 }
 .pot-btn__text--edge[data-selected='true'] {
-  background: rgba(201, 185, 165, 0.32);
-  border-color: rgba(138, 122, 104, 0.7);
+  background: rgba(168, 188, 208, 0.32);
+  border-color: rgba(91, 113, 134, 0.7);
 }
 .pot-btn__text--clean[data-selected='true'] {
   background: rgba(143, 179, 154, 0.32);

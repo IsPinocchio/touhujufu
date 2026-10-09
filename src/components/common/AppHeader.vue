@@ -22,8 +22,8 @@ function toggleSound() {
 <template>
   <header class="app-header">
     <RouterLink to="/" class="app-header__brand">
-      <span class="app-header__logo">投</span>
-      <span class="app-header__title">投壶拒腐</span>
+      <span class="app-header__logo">廉</span>
+      <span class="app-header__title">廉动星球</span>
     </RouterLink>
 
     <div class="app-header__actions">

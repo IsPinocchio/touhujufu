@@ -13,7 +13,7 @@ import {
   BREEZE_AWARD,
   APP_VERSION,
 } from '@/data/config'
-import { POTS, resolveThrow, shuffle, clamp, calculateQuality, evaluateQuality } from '@/utils/probability'
+import { POTS, resolveThrow, shuffle, calculateQuality, evaluateQuality } from '@/utils/probability'
 import { loadJSON, saveJSON } from '@/utils/storage'
 
 const HISTORY_KEY = 'touhu_history'
@@ -137,18 +137,17 @@ export const useGameStore = defineStore('game', {
 
     /** 计算出手质量与最终命中判定（不落地，供 releaseCharge 使用） */
     calculateHit(releasePos) {
-      const pot = POTS[this.selectedPot]
-      // 松手后叠加 ±3% 随机抖动，保留不确定性
-      const jitter = (Math.random() * 2 - 1) * 0.03
-      const finalPos = clamp(releasePos + jitter, 0, 1)
-      const quality = calculateQuality(finalPos, this.bestZoneStart, this.bestZoneWidth)
-      const hitRate = pot.hitRate * quality
-      const result = resolveThrow(this.selectedPot, hitRate, this.humanPlayer?.marked)
+      // 确定性判定：指针落在最佳区间内必中，区间外不中
+      // 命中率差异完全由区间宽度 + 指针速度体现，不再叠加随机概率
+      const inZone =
+        releasePos >= this.bestZoneStart && releasePos <= this.bestZoneStart + this.bestZoneWidth
+      const quality = calculateQuality(releasePos, this.bestZoneStart, this.bestZoneWidth)
+      const result = resolveThrow(this.selectedPot, inZone ? 1 : 0, this.humanPlayer?.marked)
       return {
         ...result,
         quality,
-        hitRate,
-        finalPos,
+        hitRate: inZone ? 1 : 0,
+        finalPos: releasePos,
         evaluation: evaluateQuality(quality),
       }
     },

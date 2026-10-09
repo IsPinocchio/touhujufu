@@ -7,25 +7,33 @@ import ComingSoon from '@/views/ComingSoon.vue'
 
 /**
  * 路由表：使用 hash 模式，纯前端静态部署无需服务端配置。
- * /learn、/admin 为预留扩展路由，后续可替换为真实页面。
+ * 首页为「廉动星球」3D 星球（bare 布局：隐藏全局顶栏/底栏）；
+ * /quiz、/ai、/me 为预留模块路由，后续替换为真实页面。
  */
 const routes = [
-  { path: '/', name: 'home', component: HomeView, meta: { title: '首页' } },
-  { path: '/game', name: 'game', component: GameView, meta: { title: '游戏' } },
+  { path: '/', name: 'home', component: HomeView, meta: { title: '首页', bare: true } },
+  { path: '/game', name: 'game', component: GameView, meta: { title: '投壶拒腐' } },
   { path: '/result', name: 'result', component: ResultView, meta: { title: '结算' } },
   {
-    path: '/learn',
-    name: 'learn',
+    path: '/quiz',
+    name: 'quiz',
     component: ComingSoon,
-    meta: { title: '党纪党规学习' },
-    props: { title: '党纪党规学习', desc: '后续将在此提供党纪党规系统化学习与答题模块。' },
+    meta: { title: '知识竞赛' },
+    props: { title: '知识竞赛', desc: '党纪党规趣味答题挑战即将上线，敬请期待。' },
   },
   {
-    path: '/admin',
-    name: 'admin',
+    path: '/ai',
+    name: 'ai',
     component: ComingSoon,
-    meta: { title: '管理后台' },
-    props: { title: '管理后台', desc: '后续将在此提供题库管理、成绩统计与组织管理能力。' },
+    meta: { title: 'AI 问答' },
+    props: { title: 'AI 问答', desc: '廉洁知识智能问答助手即将上线，敬请期待。' },
+  },
+  {
+    path: '/me',
+    name: 'me',
+    component: ComingSoon,
+    meta: { title: '我的' },
+    props: { title: '我的', desc: '个人成绩、清风令成就与领学记录即将上线，敬请期待。' },
   },
   // 兜底重定向到首页
   { path: '/:pathMatch(.*)*', redirect: '/' },
@@ -42,7 +50,7 @@ const router = createRouter({
 
 // 路由守卫：更新文档标题
 router.afterEach((to) => {
-  const base = '投壶拒腐 · 廉洁教育互动游戏'
+  const base = '廉动星球'
   document.title = to.meta?.title ? `${to.meta.title} · ${base}` : base
 })
 

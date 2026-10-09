@@ -16,4 +16,14 @@ export default defineConfig({
     port: 5173,
     host: true,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // three.js 单独成 chunk，便于长期缓存
+        manualChunks: {
+          three: ['three'],
+        },
+      },
+    },
+  },
 })

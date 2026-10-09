@@ -4,18 +4,35 @@
  * - 渲染全局背景（渐变 + 远山剪影 + 顶部暗纹）
  * - 提供全局可折叠导航
  * - 承载 <router-view>
+ * - 首页（meta.bare）为全屏沉浸式 3D 星球，隐藏顶栏/底栏/背景
  */
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useGameStore } from '@/stores/game'
 import AppHeader from '@/components/common/AppHeader.vue'
 import AppFooter from '@/components/common/AppFooter.vue'
 
 // 全局导航折叠状态
 const navOpen = ref(false)
+const route = useRoute()
+const router = useRouter()
+const store = useGameStore()
+const isBare = computed(() => !!route.meta?.bare)
+
+// 重新游戏确认弹窗
+const restartConfirm = ref(false)
+
+function onRestart() {
+  restartConfirm.value = false
+  navOpen.value = false
+  store.initGame()
+  router.push('/game')
+}
 </script>
 
 <template>
   <!-- 全局背景层：固定定位，位于内容之下 -->
-  <div class="bg-layer" aria-hidden="true">
+  <div v-if="!isBare" class="bg-layer" aria-hidden="true">
     <!-- 顶部竹叶/暗纹装饰 -->
     <svg class="bg-bamboo" viewBox="0 0 560 200" preserveAspectRatio="xMidYMin slice">
       <g fill="none" stroke="rgba(63,92,74,0.18)" stroke-width="3" stroke-linecap="round">
@@ -43,19 +60,40 @@ const navOpen = ref(false)
     </svg>
   </div>
 
-  <!-- 顶部导航（可折叠） -->
-  <AppHeader v-model:open="navOpen" />
+  <!-- 顶部导航（可折叠；全屏沉浸式页面隐藏） -->
+  <AppHeader v-if="!isBare" v-model:open="navOpen" />
 
   <!-- 全局导航抽屉 -->
   <Transition name="fade">
     <nav v-if="navOpen" class="global-nav" @click="navOpen = false">
       <div class="global-nav__panel" @click.stop>
-        <RouterLink to="/" class="global-nav__link">首页</RouterLink>
-        <RouterLink to="/game" class="global-nav__link">开始游戏</RouterLink>
-        <RouterLink to="/learn" class="global-nav__link">党纪党规学习</RouterLink>
-        <RouterLink to="/admin" class="global-nav__link">管理后台</RouterLink>
+        <RouterLink to="/" class="global-nav__link">星球首页</RouterLink>
+        <RouterLink to="/game" class="global-nav__link">投壶拒腐</RouterLink>
+        <RouterLink to="/quiz" class="global-nav__link">知识竞赛</RouterLink>
+        <RouterLink to="/ai" class="global-nav__link">AI 问答</RouterLink>
+        <RouterLink to="/me" class="global-nav__link">我的</RouterLink>
+        <button
+          v-if="store.hasActiveGame"
+          class="global-nav__link global-nav__link--danger"
+          type="button"
+          @click="restartConfirm = true"
+        >
+          重新游戏
+        </button>
       </div>
     </nav>
+  </Transition>
+
+  <!-- 重新游戏确认 -->
+  <Transition name="fade">
+    <div v-if="restartConfirm" class="restart-overlay" @click.self="restartConfirm = false">
+      <div class="restart-modal anim-pop-in" role="dialog" aria-modal="true">
+        <p class="restart-modal__title">重新游戏？</p>
+        <p class="restart-modal__sub">当前进度将清空，从第 1 轮重新开始</p>
+        <button class="btn btn--primary btn--block" type="button" @click="onRestart">重新开始</button>
+        <button class="btn btn--ghost btn--block" type="button" @click="restartConfirm = false">继续本局</button>
+      </div>
+    </div>
   </Transition>
 
   <!-- 页面主体 -->
@@ -67,7 +105,7 @@ const navOpen = ref(false)
     </RouterView>
   </main>
 
-  <AppFooter />
+  <AppFooter v-if="!isBare" />
 </template>
 
 <style scoped>
@@ -147,5 +185,47 @@ const navOpen = ref(false)
 .global-nav__link:hover,
 .global-nav__link.router-link-active {
   background: var(--color-cream-dark);
+}
+.global-nav__link--danger {
+  text-align: left;
+  border-top: 1px solid var(--color-cream-dark);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  color: var(--color-red);
+}
+
+/* —— 重新游戏确认弹窗 —— */
+.restart-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--gap-md);
+  background: rgba(43, 33, 24, 0.7);
+}
+.restart-modal {
+  width: 100%;
+  max-width: 320px;
+  padding: var(--gap-lg);
+  background: var(--color-cream);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-float);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-sm);
+  text-align: center;
+}
+.restart-modal__title {
+  font-family: var(--font-serif);
+  font-size: 19px;
+  letter-spacing: 0.06em;
+  color: var(--color-brown-dark);
+}
+.restart-modal__sub {
+  font-size: 12px;
+  color: var(--color-ink-soft);
+  margin-bottom: var(--gap-sm);
 }
 </style>

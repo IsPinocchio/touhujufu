@@ -19,6 +19,10 @@ const emit = defineEmits(['release'])
 
 const pointer = ref(0) // 指针位置 0~1
 const holding = ref(false)
+const btnRef = ref(null)
+
+/** 供 GameView 定位箭飞行起点 */
+defineExpose({ btnEl: () => btnRef.value })
 
 let rafId = null
 let lastTs = 0
@@ -94,6 +98,7 @@ onUnmounted(() => cancelAnimationFrame(rafId))
     </div>
 
     <button
+      ref="btnRef"
       class="power-bar__btn"
       :class="`power-bar__btn--${potType}`"
       type="button"
@@ -108,13 +113,9 @@ onUnmounted(() => cancelAnimationFrame(rafId))
 </template>
 
 <style scoped>
+/* 文档流内布局：位于壶区正下方，不遮挡线索卡托盘 */
 .power-bar {
-  position: fixed;
-  left: 50%;
-  bottom: calc(var(--gap-lg) + var(--safe-bottom));
-  transform: translateX(-50%);
-  z-index: 55;
-  width: min(92vw, 420px);
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -141,7 +142,7 @@ onUnmounted(() => cancelAnimationFrame(rafId))
   background: rgba(230, 184, 96, 0.65);
 }
 .power-bar__zone--edge {
-  background: rgba(201, 185, 165, 0.65);
+  background: rgba(168, 188, 208, 0.65);
 }
 .power-bar__zone--clean {
   background: rgba(143, 179, 154, 0.65);
@@ -191,7 +192,7 @@ onUnmounted(() => cancelAnimationFrame(rafId))
   background: var(--color-copper);
 }
 .power-bar__btn--edge {
-  background: var(--color-grey-brown);
+  background: var(--color-slate-blue);
 }
 .power-bar__btn--clean {
   background: var(--color-green);

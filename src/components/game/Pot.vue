@@ -28,11 +28,11 @@ const STYLE = {
   },
   edge: {
     mouthRx: 24,
-    bodyFrom: '#a2917c',
-    bodyTo: '#5a4f40',
-    rim: '#2f2a22',
-    mouthFill: '#1b1812',
-    accent: '#c9b9a5',
+    bodyFrom: '#7a8ba0',
+    bodyTo: '#45566b',
+    rim: '#232d38',
+    mouthFill: '#10161d',
+    accent: '#a8bcd0',
   },
   clean: {
     mouthRx: 17,

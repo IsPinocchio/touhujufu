@@ -50,10 +50,10 @@ const debugCards = computed(() =>
   store.humanPlayer?.clueCards.map((c) => `${c.revealed ? '' : '反扣:'}${c.type}`).join(' '),
 )
 
-// 底部状态提示文案（根据是否已选壶切换）
+// 底部状态提示文案（未选壶时引导；选壶后由蓄力条自带文案提示）
 const tipText = computed(() => {
   if (playing.value) return statusText.value
-  if (store.selectedPot) return '按住下方按钮蓄力，松手投掷'
+  if (store.selectedPot) return ''
   return '先选择一个壶，对应你在场景中的选择'
 })
 
@@ -125,8 +125,15 @@ async function flyArrow(r, fast = false) {
   if (!el || !target) return
 
   const tr = target.getBoundingClientRect()
-  const sx = window.innerWidth / 2
-  const sy = window.innerHeight - 50
+  // 起点：蓄力按钮中心；按钮不在（兜底）时用屏幕底部中央
+  const btn = potBoardRef.value?.getPowerBtnEl?.()
+  let sx = window.innerWidth / 2
+  let sy = window.innerHeight - 50
+  if (btn) {
+    const br = btn.getBoundingClientRect()
+    sx = br.left + br.width / 2
+    sy = br.top
+  }
   let ex = tr.left + tr.width / 2
   let ey = tr.top + tr.height * 0.14
   let rot = Math.atan2(ey - sy, ex - sx) * (180 / Math.PI) + 90
