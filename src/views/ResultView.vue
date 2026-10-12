@@ -10,7 +10,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/game'
 import { partyKnowledge } from '@/data/knowledge'
-import { COURSE_MIN_SCORE, COURSE_FOR_RISKY, COURSE_COUNT, TOKEN_BONUS } from '@/data/config'
+import { COURSE_MIN_SCORE, COURSE_FOR_RISKY, COURSE_COUNT } from '@/data/config'
 import GameOverSummary from '@/components/game/GameOverSummary.vue'
 import SvgIcon from '@/components/common/SvgIcon.vue'
 
@@ -29,14 +29,14 @@ const penaltyLabel = {
   heavy: '重处分',
 }
 
-/** 需要完成的廉洁文化课程次数（方案 2.6：分数过低或投过风险壶者均需领学） */
+/** 需要完成的廉洁文化课程次数（方案 2.6：分数过低或投过风险壶者均需领学；主动交代且此后收手者从宽，免领学） */
 const requiredCourses = computed(() => {
   const h = human.value
   if (!h) return 0
   let n = 0
   if (h.penalty === 'heavy') n = COURSE_COUNT.heavy
   else if (h.penalty === 'light') n = COURSE_COUNT.light
-  if (h.score < COURSE_MIN_SCORE || (COURSE_FOR_RISKY && h.usedRiskyPot)) {
+  if (h.score < COURSE_MIN_SCORE || (COURSE_FOR_RISKY && h.usedRiskyPot && !report.value?.confessedClean)) {
     n = Math.max(n, 1)
   }
   return n
@@ -49,7 +49,7 @@ const courseReason = computed(() => {
   if (h.penalty === 'heavy') reasons.push('受重处分（线索达 2 条及以上）')
   if (h.penalty === 'light') reasons.push('受轻处分（1 条线索）')
   if (h.score < COURSE_MIN_SCORE) reasons.push(`最终分数低于 ${COURSE_MIN_SCORE} 分`)
-  if (COURSE_FOR_RISKY && h.usedRiskyPot) reasons.push('投过腐败 / 擦边壶')
+  if (COURSE_FOR_RISKY && h.usedRiskyPot && !report.value?.confessedClean) reasons.push('投过腐败 / 擦边壶')
   return reasons.join('，')
 })
 
@@ -85,8 +85,13 @@ async function copyShare() {
 }
 
 async function replay() {
-  await store.initGame()
-  router.push('/game/play')
+  try {
+    await store.initGame()
+    router.push('/game/play')
+  } catch (e) {
+    console.warn('[投壶拒腐] 重新开局失败', e)
+    router.push('/game')
+  }
 }
 
 function goHome() {
@@ -118,9 +123,11 @@ function goHome() {
         </div>
       </div>
 
-      <p v-if="human.breezeAward" class="result__breeze">清风奖 +30：全程未投腐败 / 擦边壶。</p>
+      <p v-if="human.breezeAward" class="result__breeze">
+        清风奖 +{{ store.breezeAward }}：全程未投腐败 / 擦边壶。
+      </p>
       <p v-if="human.breezeTokens > 0" class="result__breeze">
-        清风令 ×{{ human.breezeTokens }}，清算 +{{ human.breezeTokens * TOKEN_BONUS }} 分。
+        清风令 ×{{ human.breezeTokens }}，清算 +{{ human.breezeTokens * store.tokenBonus }} 分。
       </p>
       <p v-if="human.confessed" class="result__confessed">你曾主动交代：扣除了风险壶全部分数并消除了所有线索卡。</p>
 

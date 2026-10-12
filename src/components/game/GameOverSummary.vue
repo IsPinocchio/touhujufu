@@ -12,7 +12,7 @@ import { api } from '@/utils/api'
 import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps({
-  report: { type: Object, required: true }, // { escaped, zeroed, feeling, server? }
+  report: { type: Object, required: true }, // { escaped, zeroed, confessedClean, feeling, server? }
 })
 
 const auth = useAuthStore()
@@ -33,14 +33,15 @@ const CLOSING =
 
 <template>
   <div class="summary">
-    <!-- 真实玩家排行榜 -->
+    <!-- 真实玩家排行榜（自然周榜，每周一重置） -->
     <section class="summary__section">
       <h3 class="summary__heading">
-        <SvgIcon name="rank" :size="18" /> 排行榜
+        <SvgIcon name="rank" :size="18" /> 本周排行榜
+        <span class="summary__heading-note">每周一重置</span>
       </h3>
       <p v-if="boardError" class="summary__desc">排行榜加载失败，请稍后刷新查看。</p>
       <p v-else-if="leaderboard === null" class="summary__desc">加载中…</p>
-      <p v-else-if="leaderboard.length === 0" class="summary__desc">暂无排名，快来抢占榜首。</p>
+      <p v-else-if="leaderboard.length === 0" class="summary__desc">本周暂无排名，快来抢占榜首。</p>
       <ol v-else class="board">
         <li
           v-for="entry in leaderboard"
@@ -51,11 +52,15 @@ const CLOSING =
           <span class="board__rank" :class="{ 'board__rank--top': entry.rank <= 3 }">{{ entry.rank }}</span>
           <span class="board__name">{{ entry.displayName }}</span>
           <span class="board__dept">{{ entry.department }}</span>
+          <span class="board__meta">{{ entry.gamesThisWeek }} 局 · 线索 {{ entry.clueCount }}</span>
           <span class="board__score">{{ entry.bestScore }}</span>
         </li>
       </ol>
-      <p v-if="props.report.server?.usedRiskyPot" class="summary__purge-note">
+      <p v-if="props.report.server?.usedRiskyPot && !props.report.confessedClean" class="summary__purge-note">
         本局你投过腐败 / 擦边壶，已被记录在案——当前分数只是暂时保留，等待下一次「大清洗」。
+      </p>
+      <p v-else-if="props.report.confessedClean" class="summary__purge-note">
+        你曾主动交代、此后再未伸手，从宽处理：本局成绩有效，「大清洗」不会波及。
       </p>
     </section>
 
@@ -64,6 +69,15 @@ const CLOSING =
       <h3 class="summary__heading summary__heading--escape">侥幸逃脱</h3>
       <p class="summary__desc">
         你投过腐败 / 擦边壶，却没有留下线索——这只是运气好，不是真的干净。
+      </p>
+    </section>
+
+    <!-- 主动交代且此后再未伸手 -->
+    <section v-if="report.confessedClean" class="summary__section">
+      <h3 class="summary__heading summary__heading--confess">主动交代</h3>
+      <p class="summary__desc">
+        你在还有机会回头的时候选择了交代，此后再未伸手——扣除的是分数，放下的是侥幸。
+        从宽处理：本局成绩有效，「大清洗」不会波及你。
       </p>
     </section>
 
@@ -110,8 +124,17 @@ const CLOSING =
   margin-bottom: var(--gap-sm);
   color: var(--color-brown-dark);
 }
+.summary__heading-note {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--color-ink-soft);
+  letter-spacing: 0;
+}
 .summary__heading--escape {
   color: var(--color-gold);
+}
+.summary__heading--confess {
+  color: var(--color-green);
 }
 .summary__heading--zero {
   color: var(--color-red);
@@ -154,6 +177,7 @@ const CLOSING =
   text-align: center;
   font-family: var(--font-serif);
   color: var(--color-ink-soft);
+  font-variant-numeric: tabular-nums;
 }
 .board__rank--top {
   color: var(--color-gold);
@@ -161,6 +185,7 @@ const CLOSING =
 }
 .board__name {
   flex-shrink: 0;
+  min-width: 3em;
 }
 .board__dept {
   flex: 1;
@@ -170,10 +195,22 @@ const CLOSING =
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.board__meta {
+  font-size: 11px;
+  color: var(--color-ink-soft);
+  flex-shrink: 0;
+  /* 数字位数不同会导致上下行错位：固定宽度 + 右对齐 + 等宽数字 */
+  min-width: 84px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
 .board__score {
   font-family: var(--font-serif);
   font-weight: 700;
   color: var(--color-brown-dark);
+  min-width: 36px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .feeling-item {

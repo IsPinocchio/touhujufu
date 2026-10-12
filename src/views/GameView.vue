@@ -283,6 +283,11 @@ function onFinalDismiss() {
       <div v-if="hint" class="hint-toast">{{ hint }}</div>
     </Transition>
 
+    <!-- 成绩上报失败常驻提醒（重试后仍失败时出现） -->
+    <Transition name="fade">
+      <div v-if="store.reportError" class="report-error" role="alert">{{ store.reportError }}</div>
+    </Transition>
+
     <!-- 投壶选择区 -->
     <div class="game-page__board">
       <PotBoard
@@ -374,6 +379,20 @@ function onFinalDismiss() {
   border-radius: var(--radius-sm);
   font-size: 13px;
   line-height: 1.6;
+  box-shadow: var(--shadow-card);
+}
+
+.report-error {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 90;
+  padding: 8px 14px;
+  background: rgba(158, 43, 37, 0.95);
+  color: var(--color-cream);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
   box-shadow: var(--shadow-card);
 }
 

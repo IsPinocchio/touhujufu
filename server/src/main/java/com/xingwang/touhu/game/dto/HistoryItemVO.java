@@ -12,5 +12,6 @@ public record HistoryItemVO(
     Boolean confessed,
     Boolean usedRiskyPot,
     Boolean purged,        // 是否已被大清洗清零
+    Integer originalScore, // 清洗前原得分（仅被清洗局有值，其余为 null）
     LocalDateTime finishedAt) {
 }

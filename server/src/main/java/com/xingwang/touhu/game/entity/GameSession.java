@@ -36,6 +36,9 @@ public class GameSession {
   private Boolean purged;
   private Long purgeBatchId;
 
+  /** 本局抽题结果 JSON（开局生成，续玩原样返回） */
+  private String questionPlan;
+
   private LocalDateTime startedAt;
   private LocalDateTime finishedAt;
 }

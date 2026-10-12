@@ -71,8 +71,8 @@ public final class SettlementService {
     // 7. 线索阶梯处分（与前端 settlePlayer 一致）
     Penalty penalty;
     if (clueCount == 0) {
-      // 0 线索且全程未投风险壶、确实投过壶：清风奖 +30
-      if (!usedRiskyPot && !throws_.isEmpty()) {
+      // 0 线索且全程未投风险壶、至少命中过一次：清风奖 +30（全程陪跑不获奖）
+      if (!usedRiskyPot && throws_.stream().anyMatch(t -> Boolean.TRUE.equals(t.getHit()))) {
         score += GameRules.BREEZE_AWARD;
       }
       penalty = Penalty.NONE;
@@ -83,6 +83,9 @@ public final class SettlementService {
       score = 0; // 重处分：清零
       penalty = Penalty.HEAVY;
     }
+
+    // 负分清底：付费查看可能把分数扣成负数，最终得分不为负
+    score = Math.max(score, 0);
 
     return new Settlement(score, clueCount, penalty, tokens, usedRiskyPot);
   }

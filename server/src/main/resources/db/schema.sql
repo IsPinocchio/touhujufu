@@ -48,6 +48,10 @@ CREATE TABLE IF NOT EXISTS game_sessions (
   purged          TINYINT     NOT NULL DEFAULT 0 COMMENT '是否已被大清洗清零：1 是 / 0 否',
   purge_batch_id  BIGINT      DEFAULT NULL COMMENT '被哪一批清洗清零（关联 purge_batches.id）',
 
+  -- —— 本局抽题结果（JSON：9 道场景题 + 4 道判断题，含已打乱的选项顺序） ——
+  -- MEDIUMTEXT：9 道场景全文 + 选项 + 解析为中文 UTF-8（3 字节/字），TEXT 的 64KB 上限有撑爆风险
+  question_plan   MEDIUMTEXT  DEFAULT NULL COMMENT '本局抽题结果 JSON，开局时生成，续玩时原样返回',
+
   started_at      DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '开局时间',
   finished_at     DATETIME    DEFAULT NULL COMMENT '完结时间',
 
@@ -133,6 +137,41 @@ CREATE TABLE IF NOT EXISTS purge_records (
   INDEX idx_batch (batch_id),
   INDEX idx_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='清洗明细表';
+
+-- ---------------------------------------------------------------------------
+-- 场景题表：投壶情景题（每轮一道，选项映射三个壶）
+-- options_json 为 JSON 数组：[{"key":"a","text":"...","pot":"corrupt|edge|clean"}, ...]
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS scene_questions (
+  id          VARCHAR(8)  PRIMARY KEY COMMENT '题目编号（SC + 三位序号）',
+  category    VARCHAR(32) NOT NULL COMMENT '廉洁风险类别',
+  difficulty  TINYINT     NOT NULL DEFAULT 1 COMMENT '难度：1 直观 / 2 警醒 / 3 边界',
+  scene_text  TEXT        NOT NULL COMMENT '情景描述',
+  options_json TEXT       NOT NULL COMMENT '选项 JSON（含壶映射）',
+  hint        TEXT        DEFAULT NULL COMMENT '教育点解析（投掷后展示）',
+  source      VARCHAR(32) DEFAULT NULL COMMENT '题目来源',
+  enabled     TINYINT     NOT NULL DEFAULT 1 COMMENT '是否启用：1 是 / 0 否'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='场景题库';
+
+-- ---------------------------------------------------------------------------
+-- 判断题表：法规判断题（第 2/4/6/8 轮，答对得清风令）
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS quiz_questions (
+  id          VARCHAR(8)  PRIMARY KEY COMMENT '题目编号（QZ + 三位序号）',
+  category    VARCHAR(32) NOT NULL COMMENT '法规类别',
+  difficulty  TINYINT     NOT NULL DEFAULT 1 COMMENT '难度：1 一眼违规 / 2 反直觉 / 3 边界',
+  scene       TEXT        NOT NULL COMMENT '情景描述',
+  compliant   TINYINT     NOT NULL COMMENT '是否合规：1 可以做 / 0 违规',
+  answer_note VARCHAR(64) DEFAULT NULL COMMENT '一句话答案',
+  explain_text TEXT       DEFAULT NULL COMMENT '讲解（列名不用 explain，它是 MySQL 保留字）',
+  basis       VARCHAR(128) DEFAULT NULL COMMENT '纪律依据',
+  enabled     TINYINT     NOT NULL DEFAULT 1 COMMENT '是否启用：1 是 / 0 否'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='判断题库';
+
+-- 兼容存量库：老库的 question_plan 列可能是 TEXT 或不存在。
+-- MODIFY COLUMN 幂等：列存在则调整为 MEDIUMTEXT，重复执行不报错。
+-- 极老库若无此列，手动执行一次：ALTER TABLE game_sessions ADD COLUMN question_plan MEDIUMTEXT NULL;
+ALTER TABLE game_sessions MODIFY COLUMN question_plan MEDIUMTEXT NULL COMMENT '本局抽题结果 JSON，开局时生成，续玩时原样返回';
 
 -- 注：内置管理员账号由服务端启动时创建（DataInitializer），
 --     因为 BCrypt 哈希必须由程序实时生成，写死在 SQL 里容易出错。

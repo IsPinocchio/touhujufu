@@ -2,6 +2,8 @@
 /**
  * 顶部栏：标题 + 当前用户按钮 + 可折叠菜单按钮 + 音效开关
  */
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { useSettingsStore } from '@/stores/settings'
 import { useAuthStore } from '@/stores/auth'
 import { setAudioEnabled } from '@/utils/audio'
@@ -12,8 +14,12 @@ defineProps({
 })
 const emit = defineEmits(['update:open'])
 
+const route = useRoute()
 const settings = useSettingsStore()
 const auth = useAuthStore()
+
+// 当前板块名（路由 meta.title），追加在应用名后面；登录页不显示
+const moduleTitle = computed(() => (route.name === 'login' ? '' : route.meta?.title || ''))
 
 function toggleSound() {
   settings.toggleSound()
@@ -26,6 +32,7 @@ function toggleSound() {
     <RouterLink to="/" class="app-header__brand">
       <span class="app-header__logo">廉</span>
       <span class="app-header__title">廉动星球</span>
+      <span v-if="moduleTitle" class="app-header__module">{{ moduleTitle }}</span>
     </RouterLink>
 
     <div class="app-header__actions">
@@ -94,6 +101,17 @@ function toggleSound() {
   font-size: 18px;
   letter-spacing: 0.06em;
   color: var(--color-ink);
+}
+.app-header__module {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-brown-dark);
+  padding-left: var(--gap-sm);
+  margin-left: 2px;
+  border-left: 2px solid var(--color-gold);
+  letter-spacing: 0.08em;
+  line-height: 1;
 }
 .app-header__actions {
   display: flex;

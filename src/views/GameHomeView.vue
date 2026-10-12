@@ -2,21 +2,34 @@
 /**
  * 投壶拒腐 · 游戏封面
  * - 游戏介绍、规则简介
- * - 开始游戏 / 继续上局（如有存档）
+ * - 开始游戏 / 继续上局（对局进度在服务端，换设备也能续玩）
  */
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/game'
 import { useAuthStore } from '@/stores/auth'
+import { api } from '@/utils/api'
 import { corruptClueOdds } from '@/utils/probability'
 
 const router = useRouter()
 const game = useGameStore()
 const auth = useAuthStore()
 
-// 是否有可继续的存档
-const hasSave = computed(() => game.hasActiveGame)
+// 服务端进行中的对局（null = 没有可续的局）
+const serverSession = ref(null)
+const loading = ref(false)
+const errorMsg = ref('')
+
+const hasSave = computed(() => !!serverSession.value)
 const odds = computed(() => (corruptClueOdds() * 100).toFixed(1))
+
+onMounted(async () => {
+  try {
+    serverSession.value = await api.currentSession()
+  } catch {
+    serverSession.value = null
+  }
+})
 
 async function startNew() {
   // 未登录先去登录，登录后回到本页
@@ -24,11 +37,27 @@ async function startNew() {
     router.push({ path: '/login', query: { redirect: '/game' } })
     return
   }
-  await game.initGame()
-  router.push('/game/play')
+  if (loading.value) return
+  loading.value = true
+  errorMsg.value = ''
+  try {
+    await game.initGame()
+    router.push('/game/play')
+  } catch (e) {
+    errorMsg.value = e.message || '开局失败，请检查网络后重试'
+  } finally {
+    loading.value = false
+  }
 }
 
 function continueGame() {
+  if (!serverSession.value) return
+  game.resumeFromServer(serverSession.value)
+  if (game.phase === 'finalInspection') {
+    // 9 轮已完成未清算，直接进对局页展示最终巡视弹窗
+    router.push('/game/play')
+    return
+  }
   router.push('/game/play')
 }
 </script>
@@ -67,11 +96,12 @@ function continueGame() {
 
     <!-- 操作区 -->
     <div class="game-home__actions anim-slide-up">
+      <p v-if="errorMsg" class="game-home__error">{{ errorMsg }}</p>
       <button v-if="hasSave" class="btn btn--green btn--block" type="button" @click="continueGame">
-        继续上局
+        继续上局（第 {{ serverSession.currentRound > 9 ? 9 : serverSession.currentRound }} 轮）
       </button>
-      <button class="btn btn--primary btn--block" type="button" @click="startNew">
-        {{ hasSave ? '重新开始' : '开始游戏' }}
+      <button class="btn btn--primary btn--block" type="button" :disabled="loading" @click="startNew">
+        {{ loading ? '开局中…' : hasSave ? '重新开始' : '开始游戏' }}
       </button>
       <RouterLink to="/" class="btn btn--ghost btn--block">返回星球首页</RouterLink>
     </div>
@@ -156,5 +186,10 @@ function continueGame() {
   display: flex;
   flex-direction: column;
   gap: var(--gap-sm);
+}
+.game-home__error {
+  font-size: 13px;
+  color: var(--color-red);
+  text-align: center;
 }
 </style>

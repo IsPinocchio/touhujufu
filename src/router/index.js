@@ -5,6 +5,7 @@ import LoginView from '@/views/LoginView.vue'
 import GameHomeView from '@/views/GameHomeView.vue'
 import GameView from '@/views/GameView.vue'
 import ResultView from '@/views/ResultView.vue'
+import MeView from '@/views/MeView.vue'
 import ComingSoon from '@/views/ComingSoon.vue'
 
 /**
@@ -36,9 +37,8 @@ const routes = [
   {
     path: '/me',
     name: 'me',
-    component: ComingSoon,
+    component: MeView,
     meta: { title: '我的' },
-    props: { title: '我的', desc: '个人成绩、清风令成就与领学记录即将上线，敬请期待。' },
   },
   // 兜底重定向到首页
   { path: '/:pathMatch(.*)*', redirect: '/' },
@@ -62,13 +62,19 @@ router.afterEach((to) => {
 // 登录守卫：除登录页外，所有页面都要求登录；未登录跳登录页，登录后按 redirect 跳回（默认首页）
 // 注意：守卫里不能用 useAuthStore() 顶部导入（pinia 可能尚未激活），改为动态读取 token
 import { getToken } from '@/utils/api'
+import { useToastStore } from '@/stores/toast'
 
-router.beforeEach((to) => {
+router.beforeEach((to, from) => {
   if (to.path === '/login') {
     // 已登录用户访问登录页，直接回首页
     return getToken() ? '/' : true
   }
   if (!getToken()) {
+    // 应用内跳转（如点「我的」「开始游戏」）被拦下时给出提示；
+    // 首次打开站点（from 无来源）静默跳登录页，避免每次访问都弹窗
+    if (from.name) {
+      useToastStore().show('请先登录后再继续', 'info')
+    }
     return { path: '/login', query: to.fullPath === '/' ? {} : { redirect: to.fullPath } }
   }
   return true

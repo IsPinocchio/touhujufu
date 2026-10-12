@@ -17,7 +17,8 @@ public class PurgeScheduler {
 
   private final PurgeService purgeService;
 
-  @Scheduled(cron = "${touhu.purge.cron}")
+  // zone 显式指定东八区：cron 默认走 JVM 时区，容器/服务器在 UTC 时周一 3 点会偏 8 小时
+  @Scheduled(cron = "${touhu.purge.cron}", zone = "Asia/Shanghai")
   public void scheduledPurge() {
     log.info("定时大清洗开始");
     try {

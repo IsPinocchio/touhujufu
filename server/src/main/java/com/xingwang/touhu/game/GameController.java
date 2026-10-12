@@ -6,6 +6,7 @@ import com.xingwang.touhu.game.dto.CardViewRequest;
 import com.xingwang.touhu.game.dto.FinishVO;
 import com.xingwang.touhu.game.dto.HistoryItemVO;
 import com.xingwang.touhu.game.dto.QuizRequest;
+import com.xingwang.touhu.game.dto.SessionStateVO;
 import com.xingwang.touhu.game.dto.SessionVO;
 import com.xingwang.touhu.game.dto.ThrowRequest;
 import jakarta.validation.Valid;
@@ -43,7 +44,7 @@ public class GameController {
   }
 
   @GetMapping("/sessions/current")
-  public Result<SessionVO> current() {
+  public Result<SessionStateVO> current() {
     return Result.ok(gameService.currentSession(UserContext.getUserId()));
   }
 

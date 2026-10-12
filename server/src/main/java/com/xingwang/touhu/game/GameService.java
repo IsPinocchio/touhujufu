@@ -1,6 +1,8 @@
 package com.xingwang.touhu.game;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.xingwang.touhu.admin.entity.PurgeRecord;
+import com.xingwang.touhu.admin.mapper.PurgeRecordMapper;
 import com.xingwang.touhu.common.BizException;
 import com.xingwang.touhu.common.enums.CardType;
 import com.xingwang.touhu.common.enums.PotType;
@@ -9,6 +11,7 @@ import com.xingwang.touhu.game.dto.CardViewRequest;
 import com.xingwang.touhu.game.dto.FinishVO;
 import com.xingwang.touhu.game.dto.HistoryItemVO;
 import com.xingwang.touhu.game.dto.QuizRequest;
+import com.xingwang.touhu.game.dto.SessionStateVO;
 import com.xingwang.touhu.game.dto.SessionVO;
 import com.xingwang.touhu.game.dto.ThrowRequest;
 import com.xingwang.touhu.game.entity.CardViewRecord;
@@ -19,6 +22,8 @@ import com.xingwang.touhu.game.mapper.CardViewRecordMapper;
 import com.xingwang.touhu.game.mapper.GameSessionMapper;
 import com.xingwang.touhu.game.mapper.QuizRecordMapper;
 import com.xingwang.touhu.game.mapper.ThrowRecordMapper;
+import com.xingwang.touhu.question.QuestionService;
+import com.xingwang.touhu.question.QuestionService.QuestionPlan;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -26,7 +31,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 游戏服务：对局的完整生命周期。
@@ -41,29 +48,48 @@ public class GameService {
   private final ThrowRecordMapper throwMapper;
   private final QuizRecordMapper quizMapper;
   private final CardViewRecordMapper cardViewMapper;
+  private final QuestionService questionService;
+  private final PurgeRecordMapper purgeRecordMapper;
 
-  /** 开局：创建对局，返回对局ID */
+  /** 开局：抽题入库并创建对局，返回对局ID + 本局题目 + 规则快照 */
+  // @Transactional 不只是为了原子性：GET_LOCK 是连接级锁，
+  // 非事务下每条 SQL 各自从连接池取连接，锁会失效甚至泄漏（释放不到持锁的那条连接）。
+  // 事务内所有 SQL 固定走同一连接，锁才真正互斥、且必定被释放。
+  @Transactional
   public SessionVO start(Long userId) {
-    // 同一用户同时只允许一局进行中，避免刷分局
-    Long playing = sessionMapper.selectCount(new LambdaQueryWrapper<GameSession>()
-        .eq(GameSession::getUserId, userId)
-        .eq(GameSession::getStatus, SessionStatus.PLAYING.name()));
-    if (playing > 0) {
-      throw new BizException("你有一局游戏正在进行中，请先完成或继续该对局");
+    // 同一用户同时只允许一局进行中，避免刷分局。
+    // 用 MySQL 命名锁把"检查 + 创建"变成原子操作，防止双击/并发产生两局 PLAYING
+    String lockName = "touhu_start_" + userId;
+    Integer locked = sessionMapper.getLock(lockName);
+    if (locked == null || locked != 1) {
+      throw new BizException("操作太频繁，请稍后再试");
     }
-    GameSession session = new GameSession();
-    session.setUserId(userId);
-    session.setStatus(SessionStatus.PLAYING.name());
-    session.setCurrentRound(1);
-    session.setFinalScore(0);
-    session.setClueCount(0);
-    session.setPenalty("NONE");
-    session.setBreezeTokens(0);
-    session.setConfessed(false);
-    session.setUsedRiskyPot(false);
-    session.setPurged(false);
-    sessionMapper.insert(session);
-    return new SessionVO(session.getId(), 1, session.getStatus(), session.getStartedAt());
+    try {
+      Long playing = sessionMapper.selectCount(new LambdaQueryWrapper<GameSession>()
+          .eq(GameSession::getUserId, userId)
+          .eq(GameSession::getStatus, SessionStatus.PLAYING.name()));
+      if (playing > 0) {
+        throw new BizException("你有一局游戏正在进行中，请先完成或继续该对局");
+      }
+      QuestionPlan plan = questionService.pickSessionQuestions(GameRules.TOTAL_ROUNDS, GameRules.QUIZ_ROUNDS);
+      GameSession session = new GameSession();
+      session.setUserId(userId);
+      session.setStatus(SessionStatus.PLAYING.name());
+      session.setCurrentRound(1);
+      session.setFinalScore(0);
+      session.setClueCount(0);
+      session.setPenalty("NONE");
+      session.setBreezeTokens(0);
+      session.setConfessed(false);
+      session.setUsedRiskyPot(false);
+      session.setPurged(false);
+      session.setQuestionPlan(questionService.toJson(plan));
+      sessionMapper.insert(session);
+      return new SessionVO(session.getId(), 1, session.getStatus(), session.getStartedAt(), plan,
+          GameRules.snapshot());
+    } finally {
+      sessionMapper.releaseLock(lockName);
+    }
   }
 
   /** 上报一轮投掷；hit 与得分由服务端按规则推导（区间内必中），不信客户端 */
@@ -116,12 +142,30 @@ public class GameService {
     sessionMapper.updateById(session);
   }
 
-  /** 上报一轮答题：仅 2/4/6/8 轮，每轮一次 */
+  /** 上报一轮答题：仅 2/4/6/8 轮，每轮一次；须先完成本轮投掷，且题目与本局抽题结果一致 */
   public void reportQuiz(Long userId, Long sessionId, QuizRequest req) {
     GameSession session = loadOwnedSession(userId, sessionId);
     requirePlaying(session);
     if (!GameRules.isQuizRound(req.roundNo())) {
       throw new BizException("第 " + req.roundNo() + " 轮没有判断题");
+    }
+    // 顺序校验：答题发生在本轮投掷之后（投掷上报后 currentRound 已 +1）
+    if (!req.roundNo().equals(session.getCurrentRound() - 1)) {
+      throw new BizException("答题轮次与游戏进度不匹配");
+    }
+    ThrowRecord roundThrow = throwMapper.selectOne(new LambdaQueryWrapper<ThrowRecord>()
+        .eq(ThrowRecord::getSessionId, sessionId)
+        .eq(ThrowRecord::getRoundNo, req.roundNo()));
+    if (roundThrow == null) {
+      throw new BizException("请先完成本轮投掷再答题");
+    }
+    // quizId 必须是本局该轮抽到的题（老对局没有 question_plan 时跳过该校验）
+    if (session.getQuestionPlan() != null) {
+      QuestionService.QuizPayload planned =
+          questionService.parsePlan(session.getQuestionPlan()).quizzes().get(req.roundNo());
+      if (planned == null || !planned.id().equals(req.quizId())) {
+        throw new BizException("题目与本局抽题结果不一致");
+      }
     }
     QuizRecord record = new QuizRecord();
     record.setSessionId(sessionId);
@@ -135,19 +179,37 @@ public class GameService {
     }
   }
 
-  /** 上报付费查看：扣除对应壶的查看费用（清算时统一扣减） */
+  /** 上报付费查看：扣除对应壶的查看费用（清算时统一扣减）；当前分数不足时拒绝 */
   public void reportCardView(Long userId, Long sessionId, CardViewRequest req) {
     GameSession session = loadOwnedSession(userId, sessionId);
     requirePlaying(session);
 
     // 找到那一轮的投掷记录，校验确实有卡可看，并按壶计费
-    ThrowRecord throwRecord = throwMapper.selectOne(new LambdaQueryWrapper<ThrowRecord>()
-        .eq(ThrowRecord::getSessionId, sessionId)
-        .eq(ThrowRecord::getRoundNo, req.roundNo()));
+    List<ThrowRecord> throws_ = throwMapper.selectList(new LambdaQueryWrapper<ThrowRecord>()
+        .eq(ThrowRecord::getSessionId, sessionId));
+    ThrowRecord throwRecord = throws_.stream()
+        .filter(t -> t.getRoundNo().equals(req.roundNo()))
+        .findFirst().orElse(null);
     if (throwRecord == null || CardType.NONE.name().equals(throwRecord.getCardType())) {
       throw new BizException("该轮没有可查看的线索卡");
     }
     PotType pot = PotType.valueOf(throwRecord.getPotType());
+
+    // 余额校验：当前得分 = 投掷得分 - 交代扣除 - 已付查看费，不足则不允许查看
+    int earned = throws_.stream().mapToInt(ThrowRecord::getScoreGained).sum();
+    if (Boolean.TRUE.equals(session.getConfessed())) {
+      earned -= throws_.stream()
+          .filter(t -> t.getRoundNo() <= GameRules.CONFESS_ROUND)
+          .filter(t -> PotType.valueOf(t.getPotType()).isRisky())
+          .mapToInt(ThrowRecord::getScoreGained)
+          .sum();
+    }
+    int spent = cardViewMapper.selectList(new LambdaQueryWrapper<CardViewRecord>()
+            .eq(CardViewRecord::getSessionId, sessionId))
+        .stream().mapToInt(CardViewRecord::getCost).sum();
+    if (earned - spent < pot.getViewCost()) {
+      throw new BizException("当前分数不足，无法查看这张卡");
+    }
 
     CardViewRecord record = new CardViewRecord();
     record.setSessionId(sessionId);
@@ -160,12 +222,19 @@ public class GameService {
     }
   }
 
-  /** 主动交代：仅第 4 轮结束后（即进入第 5 轮前）一次 */
+  /** 主动交代：仅第 4 轮结束（投掷与判断题均完成）后一次 */
   public void confess(Long userId, Long sessionId) {
     GameSession session = loadOwnedSession(userId, sessionId);
     requirePlaying(session);
     if (session.getCurrentRound() != GameRules.CONFESS_ROUND + 1) {
       throw new BizException("主动交代窗口已关闭（仅第 4 轮结束后）");
+    }
+    // 前端流程是「第 4 轮投掷 -> 判断题 -> 交代窗口」，服务端保持同样顺序
+    Long quizDone = quizMapper.selectCount(new LambdaQueryWrapper<QuizRecord>()
+        .eq(QuizRecord::getSessionId, sessionId)
+        .eq(QuizRecord::getRoundNo, GameRules.CONFESS_ROUND));
+    if (quizDone == 0) {
+      throw new BizException("请先完成第 " + GameRules.CONFESS_ROUND + " 轮的法规判断题");
     }
     if (session.getConfessed()) {
       throw new BizException("已经交代过了");
@@ -218,22 +287,38 @@ public class GameService {
     }
   }
 
-  /** 我的历史战绩（已完结的局，最新在前） */
+  /** 我的历史战绩（已完结的局，最新在前）；被清洗的局带清洗前原分，便于玩家知情 */
   public List<HistoryItemVO> myHistory(Long userId) {
     List<GameSession> sessions = sessionMapper.selectList(new LambdaQueryWrapper<GameSession>()
         .eq(GameSession::getUserId, userId)
         .eq(GameSession::getStatus, SessionStatus.FINISHED.name())
         .orderByDesc(GameSession::getFinishedAt)
         .last("LIMIT 50"));
+
+    // 被清洗局的原得分存在 purge_records，一次性批量查出，避免循环逐条查库
+    List<Long> purgedIds = sessions.stream()
+        .filter(s -> Boolean.TRUE.equals(s.getPurged()))
+        .map(GameSession::getId)
+        .toList();
+    Map<Long, Integer> originalScores = new HashMap<>();
+    if (!purgedIds.isEmpty()) {
+      purgeRecordMapper.selectList(new LambdaQueryWrapper<PurgeRecord>()
+              .in(PurgeRecord::getSessionId, purgedIds))
+          .forEach(r -> originalScores.put(r.getSessionId(), r.getOriginalScore()));
+    }
+
     return sessions.stream()
         .map(s -> new HistoryItemVO(s.getId(), s.getFinalScore(), s.getClueCount(), s.getPenalty(),
             s.getBreezeTokens(), s.getConfessed(), s.getUsedRiskyPot(), s.getPurged(),
-            s.getFinishedAt()))
+            originalScores.get(s.getId()), s.getFinishedAt()))
         .toList();
   }
 
-  /** 查询当前进行中的对局（用于"继续上局"） */
-  public SessionVO currentSession(Long userId) {
+  /**
+   * 查询当前进行中的对局完整状态（用于"继续上局"，换设备也能续玩）：
+   * 返回本局题目 + 已上报的全部明细，前端按轮次重放即可还原现场。
+   */
+  public SessionStateVO currentSession(Long userId) {
     GameSession session = sessionMapper.selectOne(new LambdaQueryWrapper<GameSession>()
         .eq(GameSession::getUserId, userId)
         .eq(GameSession::getStatus, SessionStatus.PLAYING.name())
@@ -242,7 +327,34 @@ public class GameService {
     if (session == null) {
       return null;
     }
-    return new SessionVO(session.getId(), session.getCurrentRound(), session.getStatus(),
+    Long sid = session.getId();
+    List<SessionStateVO.ThrowItem> throwsList = throwMapper.selectList(
+            new LambdaQueryWrapper<ThrowRecord>()
+                .eq(ThrowRecord::getSessionId, sid)
+                .orderByAsc(ThrowRecord::getRoundNo))
+        .stream()
+        .map(t -> new SessionStateVO.ThrowItem(t.getRoundNo(), t.getSceneId(), t.getPotType(),
+            t.getInZone(), t.getHit(), t.getScoreGained(), t.getCardType()))
+        .toList();
+    List<SessionStateVO.QuizItem> quizzes = quizMapper.selectList(
+            new LambdaQueryWrapper<QuizRecord>()
+                .eq(QuizRecord::getSessionId, sid)
+                .orderByAsc(QuizRecord::getRoundNo))
+        .stream()
+        .map(q -> new SessionStateVO.QuizItem(q.getRoundNo(), q.getQuizId(), q.getCorrect()))
+        .toList();
+    List<SessionStateVO.CardViewItem> cardViews = cardViewMapper.selectList(
+            new LambdaQueryWrapper<CardViewRecord>()
+                .eq(CardViewRecord::getSessionId, sid)
+                .orderByAsc(CardViewRecord::getRoundNo))
+        .stream()
+        .map(v -> new SessionStateVO.CardViewItem(v.getRoundNo(), v.getCost()))
+        .toList();
+    QuestionPlan plan = session.getQuestionPlan() != null
+        ? questionService.parsePlan(session.getQuestionPlan())
+        : null;
+    return new SessionStateVO(sid, session.getCurrentRound(), session.getStatus(),
+        session.getConfessed(), plan, GameRules.snapshot(), throwsList, quizzes, cardViews,
         session.getStartedAt());
   }
 

@@ -5,7 +5,7 @@
  */
 
 // 版本号：控制台输出，用于排查“浏览器里跑的到底是不是最新代码”
-export const APP_VERSION = '1.1.0'
+export const APP_VERSION = '1.2.0'
 
 // —— 轮次与流程 ——
 export const TOTAL_ROUNDS = 9 // 活动共九轮
@@ -36,9 +36,8 @@ export const VIEW_COST = { corrupt: 10, edge: 5 }
 export const TOKEN_BONUS = 10
 
 // —— 最终清算（方案 2.6）——
-export const BREEZE_AWARD = 30 // 0 线索且全程未投风险壶：清风奖
-// 线索阶梯：0 条保留全部；1 条减半；>=2 条清零
-// 注：方案原文「小于 2 减半、大于 2 清零」，恰好 2 条未定义，此处按 >=2 清零实现（与现有代码一致），上线前请与策划确认
+export const BREEZE_AWARD = 30 // 0 线索且全程未投风险壶、至少命中一次：清风奖
+// 线索阶梯：0 条保留全部；1 条减半；2 条及以上清零（与策划确认的定稿口径）
 
 // —— 惩罚（方案 2.6）——
 export const COURSE_MIN_SCORE = 40 // 最终分数低于 40 需领学

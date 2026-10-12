@@ -14,10 +14,11 @@ spring:
     password: ${DB_PASSWORD:123456}
   sql:
     init:
-      # 启动时自动执行建表脚本（脚本内均为 CREATE TABLE IF NOT EXISTS，重复执行无副作用）
+      # 启动时自动执行建表脚本（脚本内均为 CREATE TABLE IF NOT EXISTS / 幂等 ALTER，重复执行无副作用）
       mode: always
-      schema-locations: classpath:db/schema.sql
-      continue-on-error: true
+      schema-locations: classpath:db/schema.sql,classpath:db/seed_questions.sql
+      # 脚本出错直接启动失败，不掩盖真实问题（所有语句已保证幂等）
+      continue-on-error: false
 
 mybatis-plus:
   configuration:

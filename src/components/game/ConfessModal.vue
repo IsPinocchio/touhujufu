@@ -49,7 +49,7 @@ const riskyScore = computed(() => props.player.riskyScore)
           </button>
         </div>
 
-        <p class="confess__note">现实中，主动交代可以从宽处理；但机会只有一次。</p>
+        <p class="confess__note">主动交代从宽处理：免于「大清洗」清零；但机会只有一次。</p>
       </div>
     </div>
   </div>

@@ -12,6 +12,7 @@ import { useGameStore } from '@/stores/game'
 import { useAuthStore } from '@/stores/auth'
 import AppHeader from '@/components/common/AppHeader.vue'
 import AppFooter from '@/components/common/AppFooter.vue'
+import AppToast from '@/components/common/AppToast.vue'
 
 // 全局导航折叠状态
 const navOpen = ref(false)
@@ -40,8 +41,13 @@ const quitConfirm = ref(false)
 async function onRestart() {
   restartConfirm.value = false
   navOpen.value = false
-  await store.initGame()
-  router.push('/game/play')
+  try {
+    await store.initGame()
+    router.push('/game/play')
+  } catch (e) {
+    console.warn('[投壶拒腐] 重新开局失败', e)
+    router.push('/game')
+  }
 }
 
 function onQuit() {
@@ -157,6 +163,9 @@ function onQuit() {
   </main>
 
   <AppFooter v-if="!isBare" />
+
+  <!-- 全局轻提示（接口报错 / 登录态失效等） -->
+  <AppToast />
 </template>
 
 <style scoped>
