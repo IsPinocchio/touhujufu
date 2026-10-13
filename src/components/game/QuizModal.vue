@@ -7,7 +7,8 @@
 import { ref, computed } from 'vue'
 
 const props = defineProps({
-  quiz: { type: Object, required: true }, // { id, scene, compliant, answerNote, explain, basis }
+  // qtype 为 statement 时是条例判断题（对/错），缺省按情景判断（合规/违规）处理
+  quiz: { type: Object, required: true }, // { id, scene, qtype, compliant, answerNote, explain, basis }
 })
 
 const emit = defineEmits(['answer'])
@@ -15,6 +16,8 @@ const emit = defineEmits(['answer'])
 const answered = ref(false)
 const wasCorrect = ref(false)
 
+const isStatement = computed(() => props.quiz.qtype === 'statement')
+const questionText = computed(() => (isStatement.value ? '以上表述，正确吗？' : '这个做法，合规吗？'))
 const title = computed(() => (answered.value ? (wasCorrect.value ? '回答正确' : '判断失误') : '法规判断 · 红线三秒'))
 
 function choose(compliant) {
@@ -39,14 +42,14 @@ function confirm() {
 
       <div class="quiz__body">
         <p class="quiz__scene">{{ quiz.scene }}</p>
-        <p class="quiz__question">这个做法，合规吗？</p>
+        <p class="quiz__question">{{ questionText }}</p>
 
         <div v-if="!answered" class="quiz__actions">
           <button class="btn btn--green btn--block" type="button" @click="choose(true)">
-            合规 · 能收（做）
+            {{ isStatement ? '正确 · 符合规定' : '合规 · 能收（做）' }}
           </button>
           <button class="btn btn--danger btn--block" type="button" @click="choose(false)">
-            违规 · 不能收（做）
+            {{ isStatement ? '错误 · 与规定不符' : '违规 · 不能收（做）' }}
           </button>
         </div>
 
@@ -56,7 +59,7 @@ function confirm() {
           </p>
           <div class="quiz__explain">
             <p>{{ quiz.explain }}</p>
-            <p class="quiz__basis">依据：{{ quiz.basis }}</p>
+            <p class="quiz__basis" :title="quiz.basis">依据：{{ quiz.basis }}</p>
           </div>
           <button class="btn btn--primary btn--block" type="button" @click="confirm">
             {{ wasCorrect ? '收下清风令' : '继续游戏' }}
@@ -164,5 +167,11 @@ function confirm() {
 .quiz__basis {
   color: var(--color-ink-soft);
   font-size: 12px;
+  /* 依据含条文原文，最多显示两行，超出省略号截断，hover（title）显示全文 */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  cursor: help;
 }
 </style>

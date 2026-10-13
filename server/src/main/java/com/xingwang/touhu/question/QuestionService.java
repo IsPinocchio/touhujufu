@@ -36,9 +36,9 @@ public class QuestionService {
                              String scene, List<JsonNode> options, String hint) {
   }
 
-  /** 下发给前端的判断题 */
+  /** 下发给前端的判断题：qtype 为 scenario（情景判断）或 statement（条例判断） */
   public record QuizPayload(String id, String category, Integer difficulty,
-                            String scene, Boolean compliant, String answerNote,
+                            String scene, String qtype, Boolean compliant, String answerNote,
                             String explain, String basis) {
   }
 
@@ -71,7 +71,7 @@ public class QuestionService {
     for (int i = 0; i < quizRounds.size(); i++) {
       QuizQuestion q = quizPool.get(i);
       quizzes.put(quizRounds.get(i), new QuizPayload(q.getId(), q.getCategory(), q.getDifficulty(),
-          q.getScene(), q.getCompliant(), q.getAnswerNote(), q.getExplainText(), q.getBasis()));
+          q.getScene(), q.getQtype(), q.getCompliant(), q.getAnswerNote(), q.getExplainText(), q.getBasis()));
     }
 
     return new QuestionPlan(scenes, quizzes);

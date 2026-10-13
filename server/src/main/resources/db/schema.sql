@@ -160,13 +160,28 @@ CREATE TABLE IF NOT EXISTS quiz_questions (
   id          VARCHAR(8)  PRIMARY KEY COMMENT '题目编号（QZ + 三位序号）',
   category    VARCHAR(32) NOT NULL COMMENT '法规类别',
   difficulty  TINYINT     NOT NULL DEFAULT 1 COMMENT '难度：1 一眼违规 / 2 反直觉 / 3 边界',
-  scene       TEXT        NOT NULL COMMENT '情景描述',
-  compliant   TINYINT     NOT NULL COMMENT '是否合规：1 可以做 / 0 违规',
+  scene       TEXT        NOT NULL COMMENT '题干（情景描述或条例表述）',
+  qtype       VARCHAR(16) NOT NULL DEFAULT 'scenario' COMMENT '题型：scenario 情景判断 / statement 条例判断',
+  compliant   TINYINT     NOT NULL COMMENT '情景题：1 可以做 / 0 违规；条例题：1 表述正确 / 0 表述错误',
   answer_note VARCHAR(64) DEFAULT NULL COMMENT '一句话答案',
   explain_text TEXT       DEFAULT NULL COMMENT '讲解（列名不用 explain，它是 MySQL 保留字）',
-  basis       VARCHAR(128) DEFAULT NULL COMMENT '纪律依据',
+  basis       TEXT        DEFAULT NULL COMMENT '纪律依据（法规名称 + 条号 + 条文关键原文）',
   enabled     TINYINT     NOT NULL DEFAULT 1 COMMENT '是否启用：1 是 / 0 否'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='判断题库';
+
+-- 兼容存量库：qtype 为后加列，MySQL 的 ADD COLUMN 没有幂等语法，用动态 SQL 判断后再加
+SET @qtype_exists := (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'quiz_questions' AND COLUMN_NAME = 'qtype');
+SET @qtype_ddl := IF(@qtype_exists = 0,
+  'ALTER TABLE quiz_questions ADD COLUMN qtype VARCHAR(16) NOT NULL DEFAULT ''scenario'' COMMENT ''题型：scenario 情景判断 / statement 条例判断'' AFTER scene',
+  'SELECT 1');
+PREPARE qtype_stmt FROM @qtype_ddl;
+EXECUTE qtype_stmt;
+DEALLOCATE PREPARE qtype_stmt;
+
+-- 兼容存量库：basis 原为 VARCHAR(128)，放不下条文原文，扩为 TEXT（MODIFY COLUMN 幂等）
+ALTER TABLE quiz_questions MODIFY COLUMN basis TEXT DEFAULT NULL COMMENT '纪律依据（法规名称 + 条号 + 条文关键原文）';
 
 -- 兼容存量库：老库的 question_plan 列可能是 TEXT 或不存在。
 -- MODIFY COLUMN 幂等：列存在则调整为 MEDIUMTEXT，重复执行不报错。

@@ -17,7 +17,10 @@ public class QuizQuestion {
   private Integer difficulty;
   private String scene;
 
-  /** 是否合规：true 可以做 / false 违规 */
+  /** 题型：scenario 情景判断 / statement 条例判断 */
+  private String qtype;
+
+  /** 情景题：true 可以做 / false 违规；条例题：true 表述正确 / false 表述错误 */
   private Boolean compliant;
 
   private String answerNote;
