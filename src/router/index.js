@@ -6,6 +6,7 @@ import GameHomeView from '@/views/GameHomeView.vue'
 import GameView from '@/views/GameView.vue'
 import ResultView from '@/views/ResultView.vue'
 import MeView from '@/views/MeView.vue'
+import LeaderboardView from '@/views/LeaderboardView.vue'
 import ComingSoon from '@/views/ComingSoon.vue'
 
 /**
@@ -20,6 +21,7 @@ const routes = [
   { path: '/game', name: 'game', component: GameHomeView, meta: { title: '投壶拒腐' } },
   { path: '/game/play', name: 'gamePlay', component: GameView, meta: { title: '投壶拒腐' } },
   { path: '/result', name: 'result', component: ResultView, meta: { title: '结算' } },
+  { path: '/game/leaderboard', name: 'leaderboard', component: LeaderboardView, meta: { title: '本周排行榜' } },
   {
     path: '/quiz',
     name: 'quiz',

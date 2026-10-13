@@ -103,6 +103,7 @@ function continueGame() {
       <button class="btn btn--primary btn--block" type="button" :disabled="loading" @click="startNew">
         {{ loading ? '开局中…' : hasSave ? '重新开始' : '开始游戏' }}
       </button>
+      <RouterLink to="/game/leaderboard" class="btn btn--ghost btn--block">本周排行榜</RouterLink>
       <RouterLink to="/" class="btn btn--ghost btn--block">返回星球首页</RouterLink>
     </div>
   </div>

@@ -23,6 +23,18 @@ export default defineConfig({
       },
     },
   },
+  // vite preview（临时线上测试）：同样把 /api 代理到本地后端
+  preview: {
+    port: 4173,
+    host: true,
+    allowedHosts: ['.trycloudflare.com'], // cloudflared 隧道的随机子域名
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+    },
+  },
   build: {
     rollupOptions: {
       output: {

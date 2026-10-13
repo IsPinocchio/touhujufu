@@ -61,8 +61,8 @@ async function submit() {
   <div class="page login-page">
     <header class="login-page__hero anim-slide-down">
       <div class="login-page__seal">廉</div>
-      <h1 class="login-page__title">投壶拒腐</h1>
-      <p class="login-page__subtitle">廉洁教育互动游戏 · 登录后成绩计入真实排名</p>
+      <h1 class="login-page__title">廉动星球</h1>
+      <p class="login-page__subtitle">廉洁文化教育平台 · 登录后成绩计入真实排名</p>
     </header>
 
     <form class="login-page__form card anim-slide-up" @submit.prevent="submit">
