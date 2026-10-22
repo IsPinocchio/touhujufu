@@ -103,4 +103,24 @@ function dotLabel(card) {
   background: var(--color-red);
   box-shadow: 0 0 4px rgba(158, 43, 37, 0.8);
 }
+
+/* 手机端：信息栏更紧凑 */
+@media (max-width: 480px) {
+  .scoreboard {
+    min-height: 36px;
+    padding: 0 10px;
+    font-size: 13px;
+  }
+  .scoreboard__me {
+    gap: 6px;
+    font-size: 11px;
+  }
+  .scoreboard__me-item strong {
+    font-size: 13px;
+  }
+  .score-dot {
+    width: 8px;
+    height: 8px;
+  }
+}
 </style>

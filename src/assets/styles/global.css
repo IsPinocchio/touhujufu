@@ -229,3 +229,25 @@ button {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* —— 手机端（视口 ≤480px）：收紧页面留白与按钮尺寸 —— */
+@media (max-width: 480px) {
+  .page {
+    padding: var(--gap-md) 12px calc(var(--gap-lg) + var(--safe-bottom));
+  }
+  .btn {
+    min-height: 44px;
+    padding: 0 var(--gap-md);
+    font-size: 15px;
+  }
+  .card {
+    padding: var(--gap-md);
+  }
+}
+
+/* —— 矮屏设备（高度 ≤640px，如老机型横竖切换）：进一步压缩上下留白 —— */
+@media (max-height: 640px) {
+  .page {
+    padding-top: 12px;
+  }
+}

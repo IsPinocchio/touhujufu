@@ -164,4 +164,51 @@ function toggleSound() {
 .icon-btn:active {
   background: var(--color-cream-dark);
 }
+
+/* 手机端：标题与右侧按钮容易重叠，整体收紧 */
+@media (max-width: 480px) {
+  .app-header {
+    padding: 12px 12px 8px;
+  }
+  .app-header__brand {
+    gap: 6px;
+    min-width: 0;
+  }
+  .app-header__logo {
+    width: 28px;
+    height: 28px;
+    font-size: 15px;
+  }
+  .app-header__title {
+    font-size: 15px;
+    letter-spacing: 0.02em;
+  }
+  .app-header__module {
+    font-size: 13px;
+    padding-left: 6px;
+    max-width: 6em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .app-header__actions {
+    gap: 6px;
+  }
+  /* 窄屏只留头像，用户名隐藏，给板块名腾位置 */
+  .app-header__user {
+    padding: 2px;
+  }
+  .app-header__username {
+    display: none;
+  }
+  .app-header__avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+  .icon-btn {
+    width: 34px;
+    height: 34px;
+  }
+}
 </style>

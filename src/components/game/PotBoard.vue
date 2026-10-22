@@ -6,7 +6,7 @@
  * 壶下方展示当前场景映射来的选项文字（按 pot 字段匹配，半透明底色 + 配色）
  * 对外暴露 getPotMouthEl / shake，供 GameView 定位箭头与触发命中震动
  */
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import Pot from './Pot.vue'
 import PowerBar from './PowerBar.vue'
 import { POTS, POT_KEYS } from '@/utils/probability'
@@ -21,8 +21,20 @@ const emit = defineEmits(['throw'])
 
 const store = useGameStore()
 
-// 三个壶的显示尺寸（近大远小）
-const POT_SIZE = { corrupt: 120, edge: 96, clean: 72 }
+// 三个壶的显示尺寸（近大远小），随视口宽度缩放，窄屏整体缩小避免溢出
+const vw = ref(window.innerWidth)
+const onResize = () => {
+  vw.value = window.innerWidth
+}
+onMounted(() => window.addEventListener('resize', onResize))
+onUnmounted(() => window.removeEventListener('resize', onResize))
+// 420px 及以上按原尺寸显示；窄屏等比缩小，最小 0.7 倍
+const potScale = computed(() => Math.min(1, Math.max(0.7, vw.value / 420)))
+const POT_SIZE = computed(() => ({
+  corrupt: Math.round(120 * potScale.value),
+  edge: Math.round(96 * potScale.value),
+  clean: Math.round(72 * potScale.value),
+}))
 
 // 各壶 DOM 引用，供箭头定位
 const potEls = reactive({})
@@ -231,5 +243,33 @@ function onRelease(pos) {
 .pot-btn__text--clean[data-selected='true'] {
   background: rgba(143, 179, 154, 0.32);
   border-color: rgba(63, 92, 74, 0.7);
+}
+
+/* 手机端：收紧壶区间距与选项文字 */
+@media (max-width: 480px) {
+  .pot-board {
+    gap: 10px;
+    padding: 8px 0;
+  }
+  .pot-board__pots {
+    gap: 6px;
+  }
+  .pot-btn {
+    gap: 6px;
+    padding: 4px 2px;
+  }
+  .pot-btn__text {
+    padding: 6px 4px;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+}
+
+/* 矮屏：压缩上下留白，保证蓄力按钮留在首屏 */
+@media (max-height: 640px) {
+  .pot-board {
+    gap: 8px;
+    padding: 4px 0;
+  }
 }
 </style>

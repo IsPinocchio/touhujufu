@@ -361,6 +361,25 @@ function onFinalDismiss() {
   flex-direction: column;
   gap: var(--gap-md);
 }
+
+/* 手机端 / 矮屏：收紧纵向节奏，避免内容超出屏幕高度 */
+@media (max-width: 480px) {
+  .game-page {
+    gap: 10px;
+  }
+  .game-page__tip {
+    font-size: 12px;
+  }
+  .hint-toast {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+}
+@media (max-height: 640px) {
+  .game-page {
+    gap: 8px;
+  }
+}
 .game-page__board {
   display: flex;
   justify-content: center;

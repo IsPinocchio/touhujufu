@@ -17,13 +17,13 @@ export const FINAL_ROUND = TOTAL_ROUNDS // 第 9 轮结束后最终清算
 // —— 抽卡与查看（方案 2.2 / 2.3）——
 // 命中腐败/擦边壶必抽一张卡，卡面为「平安无事」或「留下线索」
 export const CLUE_ODDS = {
-  corrupt: 0.5, // 腐败壶抽中线索概率 50%
-  edge: 0.25, // 擦边壶抽中线索概率 25%
+  corrupt: 0.8, // 腐败壶抽中线索概率 50%
+  edge: 0.65, // 擦边壶抽中线索概率 25%
 }
 // 被标记「组织注意到你了」后提升（方案 2.5）
 export const CLUE_ODDS_MARKED = {
-  corrupt: 0.7,
-  edge: 0.5,
+  corrupt: 0.95,
+  edge: 0.8,
 }
 // 付费查看费用（从当前总分扣除，不足不能查看）
 export const VIEW_COST = { corrupt: 10, edge: 5 }

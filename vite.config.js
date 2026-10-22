@@ -15,6 +15,7 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
+    allowedHosts: ['.trycloudflare.com'], // cloudflared 隧道的随机子域名
     // 开发环境把 /api 代理到本地后端，避免跨域
     proxy: {
       '/api': {

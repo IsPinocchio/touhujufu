@@ -174,4 +174,17 @@ function confirm() {
   overflow: hidden;
   cursor: help;
 }
+
+/* 手机端：弹窗字号收紧 */
+@media (max-width: 480px) {
+  .quiz__title {
+    font-size: 19px;
+  }
+  .quiz__scene {
+    font-size: 14px;
+  }
+  .quiz__verdict {
+    font-size: 17px;
+  }
+}
 </style>

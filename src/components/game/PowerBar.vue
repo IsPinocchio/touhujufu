@@ -204,4 +204,26 @@ onUnmounted(() => cancelAnimationFrame(rafId))
   opacity: 0.5;
   filter: none;
 }
+
+/* 手机端 / 矮屏：压缩蓄力区高度，避免整页超出屏幕 */
+@media (max-width: 480px) {
+  .power-bar__label {
+    font-size: 13px;
+  }
+  .power-bar__label--result {
+    font-size: 17px;
+  }
+  .power-bar__btn {
+    min-height: 54px;
+    font-size: 16px;
+  }
+}
+@media (max-height: 640px) {
+  .power-bar__track {
+    height: 18px;
+  }
+  .power-bar__btn {
+    min-height: 48px;
+  }
+}
 </style>

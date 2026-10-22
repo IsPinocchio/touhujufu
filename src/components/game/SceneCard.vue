@@ -60,4 +60,26 @@ defineProps({
   text-align: center;
   color: var(--color-ink);
 }
+
+/* 手机端：字号与内边距收紧 */
+@media (max-width: 480px) {
+  .scene-card__title {
+    padding: 8px 12px;
+  }
+  .scene-card__round {
+    font-size: 13px;
+  }
+  .scene-card__body {
+    padding: var(--gap-md) 12px;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+}
+
+/* 矮屏：进一步压缩正文留白 */
+@media (max-height: 640px) {
+  .scene-card__body {
+    padding: 12px;
+  }
+}
 </style>

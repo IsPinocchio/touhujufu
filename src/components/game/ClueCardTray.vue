@@ -135,6 +135,20 @@ function cancel() {
   color: var(--color-ink-soft);
 }
 
+/* 手机端：托盘更紧凑 */
+@media (max-width: 480px) {
+  .tray {
+    gap: 8px;
+    padding: 4px 8px;
+  }
+  .tray__row {
+    min-height: 48px;
+  }
+  .tray__empty {
+    font-size: 11px;
+  }
+}
+
 /* —— 付费确认弹窗 —— */
 .tray-pay {
   position: fixed;
