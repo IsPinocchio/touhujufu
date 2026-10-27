@@ -19,3 +19,6 @@ yarn-error.log*
 
 # 后端构建产物
 server/target/
+
+# 离线部署镜像包（体积较大，通过部署包单独传递）
+deploy/images/*.tar

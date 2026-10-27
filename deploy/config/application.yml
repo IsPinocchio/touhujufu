@@ -1,0 +1,34 @@
+# ============================================================
+# 后端外挂配置（部署挂载点）
+# 本目录由 docker-compose 挂载到容器内 /app/config/（只读）
+# 此处的 application.yml 优先级高于 jar 包内配置，改完执行
+#   docker compose restart backend
+# 即可生效，无需重新构建镜像。
+#
+# 注意：compose 环境变量（DB_HOST/DB_PASSWORD/JWT_SECRET 等）
+# 优先级高于本文件中的 ${...} 占位符解析结果——本文件引用
+# 同名变量时，实际取值仍以 compose 传入的环境变量为准。
+# ============================================================
+
+spring:
+  datasource:
+    # 单机 compose 部署保持 mysql 即可；分机器部署改为数据库服务器 IP
+    url: jdbc:mysql://${DB_HOST:mysql}:${DB_PORT:3306}/touhu?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:123456}
+
+mybatis-plus:
+  configuration:
+    # 生产环境关闭 SQL 日志（开发期用于排查，上线建议 none）
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+
+touhu:
+  cors:
+    # 允许跨域的前端来源（浏览器页面来源，不含 :8089）
+    allowed-origins: ${CORS_ORIGINS:https://maas-dev.chinasatnet.com.cn}
+  jwt:
+    secret: ${JWT_SECRET:touhu-anti-corruption-secret-key-change-me-in-prod}
+    expire-days: 7
+  purge:
+    # 大清洗定时任务 cron：秒 分 时 日 月 星期（默认每周一凌晨 3 点）
+    cron: ${PURGE_CRON:0 0 3 * * MON}

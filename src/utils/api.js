@@ -47,6 +47,12 @@ function toastError(message) {
   }
 }
 
+// 接口前缀优先级：.env 的 VITE_API_BASE > 页面 base 路径
+// - 开发环境：两者都未设置 → ''（/api 走 vite proxy 到 localhost:8080）
+// - 线上：.env.production 设为 https://maas-dev.chinasatnet.com.cn:8089/ldxq_backend
+//   接口与页面不同源（端口不同），由后端 CORS 放行
+const API_PREFIX = import.meta.env.VITE_API_BASE ?? import.meta.env.BASE_URL.replace(/\/$/, '')
+
 async function request(path, { method = 'GET', body } = {}) {
   const headers = { 'Content-Type': 'application/json' }
   const token = getToken()
@@ -56,7 +62,7 @@ async function request(path, { method = 'GET', body } = {}) {
 
   let res
   try {
-    res = await fetch(`/api${path}`, {
+    res = await fetch(`${API_PREFIX}/api${path}`, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,

@@ -1,6 +1,7 @@
 package com.xingwang.touhu.config;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -17,6 +18,11 @@ public class WebConfig implements WebMvcConfigurer {
 
   private final AuthInterceptor authInterceptor;
 
+  // 允许跨域的前端来源，逗号分隔；默认 * 放开（开发期），
+  // 线上由环境变量 CORS_ORIGINS 传入前端实际来源，如 https://maas-dev.chinasatnet.com.cn
+  @Value("${touhu.cors.allowed-origins:*}")
+  private String allowedOrigins;
+
   @Override
   public void addInterceptors(InterceptorRegistry registry) {
     registry.addInterceptor(authInterceptor)
@@ -31,8 +37,7 @@ public class WebConfig implements WebMvcConfigurer {
   @Override
   public void addCorsMappings(CorsRegistry registry) {
     registry.addMapping("/api/**")
-        // 开发期放开所有来源；上线时改成前端实际域名，如 "https://liandong.example.com"
-        .allowedOriginPatterns("*")
+        .allowedOriginPatterns(allowedOrigins.split(","))
         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
         .allowedHeaders("*")
         .maxAge(3600);

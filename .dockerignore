@@ -1,0 +1,4 @@
+# 前端构建上下文只需要 dist 和 nginx 配置
+*
+!dist/
+!deploy/nginx/

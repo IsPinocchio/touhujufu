@@ -3,10 +3,11 @@ import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
 
 // Vite 配置：Vue 插件 + @ 别名指向 src 目录
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [vue()],
-  // 相对路径 base，便于静态部署到任意子目录
-  base: './',
+  // 开发环境 '/'；生产构建为子路径 '/ldxq/'（部署在 https://www.maas.com/ldxq 下）
+  // 该值同时决定：① 静态资源引用路径 ② api.js 的接口前缀（import.meta.env.BASE_URL）
+  base: command === 'build' ? '/ldxq/' : '/',
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
@@ -46,4 +47,4 @@ export default defineConfig({
       },
     },
   },
-})
+}))
