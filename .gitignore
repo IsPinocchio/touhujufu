@@ -22,3 +22,9 @@ server/target/
 
 # 离线部署镜像包（体积较大，通过部署包单独传递）
 deploy/images/*.tar
+
+# 真实环境变量（含密码），不提交
+.env
+
+# 前端交付压缩包（构建产物，不入库）
+deploy/dist-ldxq.zip

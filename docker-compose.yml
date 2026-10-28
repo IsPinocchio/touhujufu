@@ -1,7 +1,11 @@
-# 单机编排：mysql + backend + frontend 三个服务，一条命令拉起
+# 部署编排：mysql + backend 两个服务
+# 前端不走容器：dist 静态文件由公司网关直接伺候（部署在 /ldxq/ 路径下）
 # 敏感项从 .env 文件读取（复制 .env.example 为 .env 后填写真实值）
-# 三台服务器分开部署时，按服务拆到各机器运行，把 backend 的 DB_HOST、
-# nginx default.conf 的 proxy_pass 改成对应机器 IP 即可
+# 使用方式：
+#   1. docker load -i deploy/images/touhu-server-1.0.0-arm64.tar
+#      docker load -i deploy/images/mysql-8.4-arm64.tar
+#   2. 复制 .env.example 为 .env，填写密码
+#   3. docker compose up -d
 
 services:
   mysql:
@@ -18,14 +22,14 @@ services:
     networks:
       - touhu
     # 不暴露端口到宿主机，只允许内部容器访问；需要外部连库时再加 ports: ["3306:3306"]
+    # 若改用公司现有 MySQL：删除本服务，把下方 backend 的 DB_HOST 改为数据库服务器地址
 
   backend:
     image: touhu-server:1.0.0
-    build: ./server # 服务器能联网时可直接在服务器上构建；离线时改用 docker load 导入镜像后删掉本行
     container_name: touhu-backend
     restart: unless-stopped
     environment:
-      DB_HOST: mysql # 单机 compose 用容器名；分机器部署时改成数据库服务器 IP
+      DB_HOST: mysql # 用自带 MySQL 容器时为容器名 mysql；接现有库时改成数据库服务器 IP
       DB_PORT: 3306
       DB_USER: root
       DB_PASSWORD: ${DB_PASSWORD:?请在 .env 中设置 DB_PASSWORD}
@@ -35,23 +39,10 @@ services:
     volumes:
       - ./deploy/config:/app/config:ro # 外挂配置挂载点：改此目录下 application.yml 后重启容器生效
     ports:
-      # 公司网关 :8089 的 /ldxq_backend/ 需转发到 本机IP:BACKEND_PORT（转发时剥掉 /ldxq_backend 前缀）
+      # 公司网关 :8089 的 /ldxq_backend/ 转发到 本机IP:BACKEND_PORT（转发时剥掉 /ldxq_backend 前缀）
       - "${BACKEND_PORT:-18081}:8080"
     depends_on:
       - mysql
-    networks:
-      - touhu
-
-  frontend:
-    image: touhu-web:1.0.0
-    build: . # 离线部署时同样改用 docker load 导入后删掉本行
-    container_name: touhu-web
-    restart: unless-stopped
-    ports:
-      # 公司网关 443 的 /ldxq/ 需转发到 本机IP:WEB_PORT（保留完整路径）
-      - "${WEB_PORT:-18080}:80"
-    depends_on:
-      - backend
     networks:
       - touhu
 
