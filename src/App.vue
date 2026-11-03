@@ -97,6 +97,7 @@ function onQuit() {
       <div class="global-nav__panel" @click.stop>
         <RouterLink to="/" class="global-nav__link">星球首页</RouterLink>
         <RouterLink to="/game" class="global-nav__link">投壶拒腐</RouterLink>
+        <RouterLink to="/exhibition" class="global-nav__link" @click="navOpen = false">廉洁展馆</RouterLink>
         <RouterLink to="/quiz" class="global-nav__link">知识竞赛</RouterLink>
         <RouterLink to="/ai" class="global-nav__link">AI 问答</RouterLink>
         <RouterLink to="/me" class="global-nav__link">我的</RouterLink>

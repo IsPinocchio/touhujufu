@@ -1,7 +1,7 @@
 <script setup>
 /**
  * 廉动星球 · 首页
- * 全屏沉浸式的 3D 星球：表面四块功能大陆，点击 / 拖动进入对应模块。
+ * 全屏沉浸式的 3D 星球：表面五块功能大陆，点击 / 拖动进入对应模块。
  * 底部提供模块清单（星球标签被转走时的兜底入口）。
  */
 import { useRouter } from 'vue-router'
@@ -11,12 +11,13 @@ import PlanetSphere from '@/components/planet/PlanetSphere.vue'
 const router = useRouter()
 const game = useGameStore()
 
-// 四块功能大陆：经纬度重新拉开（投壶拒腐与 AI 问答对跖分布），形状各不相同
+// 五块功能大陆：经纬度彼此拉开，形状各不相同
 const MODULES = [
   { key: 'game', name: '投壶拒腐', glyph: '壶', color: '#b03a30', desc: '九轮情景投壶', route: '/game', lat: 14, lon: -40 },
   { key: 'quiz', name: '知识竞赛', glyph: '赛', color: '#4a7a58', desc: '党纪党规答题', route: '/quiz', lat: 46, lon: 70 },
   { key: 'ai', name: 'AI 问答', glyph: '智', color: '#46618f', desc: '廉洁知识助手', route: '/ai', lat: -14, lon: 140 },
   { key: 'me', name: '我的', glyph: '我', color: '#c09a4a', desc: '成绩与成就', route: '/me', lat: -38, lon: -105 },
+  { key: 'exhibition', name: '廉洁展馆', glyph: '馆', color: '#7a4a2b', desc: '沉浸警示展厅', route: '/exhibition', lat: 45, lon: -165 },
 ]
 
 function enter(m) {
@@ -254,9 +255,9 @@ function enter(m) {
 
 .planet-home__modules {
   width: 100%;
-  max-width: 480px;
+  max-width: 560px;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: var(--gap-sm);
 }
 .dock-module {
@@ -311,6 +312,27 @@ function enter(m) {
   letter-spacing: 0.04em;
   color: var(--color-ink-soft);
   transform: scale(0.92);
+}
+
+@media (max-width: 480px) {
+  .planet-home__dock {
+    padding: 0 8px;
+  }
+  .planet-home__modules {
+    gap: 6px;
+  }
+  .dock-module__name {
+    font-size: 11px;
+    letter-spacing: 0;
+  }
+  .dock-module__desc {
+    font-size: 9px;
+    letter-spacing: 0;
+  }
+  .dock-module__badge {
+    right: -18px;
+    font-size: 8px;
+  }
 }
 
 @media (max-height: 620px) {
