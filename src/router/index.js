@@ -5,7 +5,7 @@ import LoginView from '@/views/LoginView.vue'
 import GameHomeView from '@/views/touhu/GameHomeView.vue'
 import GameView from '@/views/touhu/GameView.vue'
 import ResultView from '@/views/touhu/ResultView.vue'
-import MeView from '@/views/MeView.vue'
+import MeView from '@/views/me/MeView.vue'
 import LeaderboardView from '@/views/touhu/LeaderboardView.vue'
 import ExhibitionView from '@/views/exhibition/ExhibitionView.vue'
 import ComingSoon from '@/views/ComingSoon.vue'
@@ -13,14 +13,14 @@ import ComingSoon from '@/views/ComingSoon.vue'
 /**
  * 路由表：使用 hash 模式，纯前端静态部署无需服务端配置。
  * 首页为「廉动星球」3D 星球（bare 布局：隐藏全局顶栏/底栏）；
- * /game 为投壶拒腐封面页（介绍 + 开始/继续），/game/play 为对局页；
- * /quiz、/ai、/me 为预留模块路由，后续替换为真实页面。
+ * /game 为投壶拒腐败封面页（介绍 + 开始/继续），/game/play 为对局页；
+ * /quiz、/scenario 为预留模块路由，后续替换为真实页面。
  */
 const routes = [
   { path: '/', name: 'home', component: HomeView, meta: { title: '首页', bare: true } },
   { path: '/login', name: 'login', component: LoginView, meta: { title: '登录' } },
-  { path: '/game', name: 'game', component: GameHomeView, meta: { title: '投壶拒腐' } },
-  { path: '/game/play', name: 'gamePlay', component: GameView, meta: { title: '投壶拒腐' } },
+  { path: '/game', name: 'game', component: GameHomeView, meta: { title: '投壶拒腐败' } },
+  { path: '/game/play', name: 'gamePlay', component: GameView, meta: { title: '投壶拒腐败' } },
   { path: '/result', name: 'result', component: ResultView, meta: { title: '结算' } },
   { path: '/game/leaderboard', name: 'leaderboard', component: LeaderboardView, meta: { title: '本周排行榜' } },
   { path: '/exhibition', name: 'exhibition', component: ExhibitionView, meta: { title: '廉洁展馆' } },
@@ -28,15 +28,15 @@ const routes = [
     path: '/quiz',
     name: 'quiz',
     component: ComingSoon,
-    meta: { title: '知识竞赛' },
-    props: { title: '知识竞赛', desc: '党纪党规趣味答题挑战即将上线，敬请期待。' },
+    meta: { title: '红线百斩' },
+    props: { title: '红线百斩', desc: '党纪党规趣味答题挑战即将上线，敬请期待。' },
   },
   {
-    path: '/ai',
-    name: 'ai',
+    path: '/scenario',
+    name: 'scenario',
     component: ComingSoon,
-    meta: { title: 'AI 问答' },
-    props: { title: 'AI 问答', desc: '廉洁知识智能问答助手即将上线，敬请期待。' },
+    meta: { title: '看得见' },
+    props: { title: '看得见', desc: '廉洁情景剧本杀即将上线，敬请期待。' },
   },
   {
     path: '/me',

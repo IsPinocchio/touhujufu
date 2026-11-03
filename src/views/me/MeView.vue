@@ -97,7 +97,7 @@ function formatTime(iso) {
       <p v-if="loadError" class="me-page__empty">加载失败，请稍后重试。</p>
       <p v-else-if="history === null" class="me-page__empty">加载中…</p>
       <p v-else-if="history.length === 0" class="me-page__empty">
-        还没有战绩，去<RouterLink to="/game" class="me-page__link">投壶拒腐</RouterLink>玩一局吧。
+        还没有战绩，去<RouterLink to="/game" class="me-page__link">投壶拒腐败</RouterLink>玩一局吧。
       </p>
       <ul v-else class="record-list">
         <li v-for="h in history" :key="h.sessionId" class="record" :class="{ 'record--purged': h.purged }">

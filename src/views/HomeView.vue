@@ -13,11 +13,11 @@ const game = useGameStore()
 
 // 五块功能大陆：经纬度彼此拉开，形状各不相同
 const MODULES = [
-  { key: 'game', name: '投壶拒腐', glyph: '壶', color: '#b03a30', desc: '九轮情景投壶', route: '/game', lat: 14, lon: -40 },
-  { key: 'quiz', name: '知识竞赛', glyph: '赛', color: '#4a7a58', desc: '党纪党规答题', route: '/quiz', lat: 46, lon: 70 },
-  { key: 'ai', name: 'AI 问答', glyph: '智', color: '#46618f', desc: '廉洁知识助手', route: '/ai', lat: -14, lon: 140 },
-  { key: 'me', name: '我的', glyph: '我', color: '#c09a4a', desc: '成绩与成就', route: '/me', lat: -38, lon: -105 },
+  { key: 'game', name: '投壶拒腐败', glyph: '壶', color: '#b03a30', desc: '九轮情景投壶', route: '/game', lat: 14, lon: -40 },
+  { key: 'quiz', name: '红线百斩', glyph: '赛', color: '#4a7a58', desc: '党纪党规答题', route: '/quiz', lat: 46, lon: 70 },
+  { key: 'scenario', name: '看得见', glyph: '剧', color: '#46618f', desc: '廉洁情景剧本杀', route: '/scenario', lat: -14, lon: 140 },
   { key: 'exhibition', name: '廉洁展馆', glyph: '馆', color: '#7a4a2b', desc: '沉浸警示展厅', route: '/exhibition', lat: 45, lon: -165 },
+  { key: 'me', name: '我的', glyph: '我', color: '#c09a4a', desc: '成绩与成就', route: '/me', lat: -38, lon: -105 },
 ]
 
 function enter(m) {

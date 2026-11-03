@@ -32,6 +32,7 @@ const labels = reactive(
 let renderer, scene, camera, planetGroup, moon
 let plates = [] // { mesh, module, normal(Vector3 local), sprite }
 let tokens = [] // 清风令环绕 sprite
+let lotuses = [] // 莲花独立环绕 sprite
 let rafId = 0
 let lastFrameTime = 0
 let needsRender = true
@@ -142,12 +143,12 @@ function createPlanetTexture() {
     ctx.fill()
   }
 
-  // 装饰性大陆（暖土金棕山丘，作为功能大陆之间的水墨肌理）
+  // 装饰性大陆放置在功能大陆之间的空隙，避免遮挡交互贴片
   const decorLand = [
-    { lat: 55, lon: -95, r: 70 }, { lat: 15, lon: -100, r: 52 },
-    { lat: -5, lon: 35, r: 60 }, { lat: 45, lon: 155, r: 56 },
-    { lat: -48, lon: 60, r: 62 }, { lat: -60, lon: 20, r: 44 },
-    { lat: 70, lon: -60, r: 40 },
+    { lat: -45, lon: 35, r: 58 }, { lat: 0, lon: 20, r: 52 },
+    { lat: -15, lon: 75, r: 50 }, { lat: -70, lon: 110, r: 46 },
+    { lat: 20, lon: -100, r: 44 }, { lat: -45, lon: -25, r: 38 },
+    { lat: 70, lon: -50, r: 34 },
   ]
   for (let i = 0; i < decorLand.length; i++) {
     const { lat, lon, r } = decorLand[i]
@@ -229,7 +230,7 @@ function createPlateTexture(color, seed = 7) {
   return tex
 }
 
-/** 莲花贴图：贴在海面上的廉洁意象装饰 */
+/** 莲花贴图：环绕星球的廉洁意象装饰 */
 function createLotusTexture() {
   const S = 128
   const cv = document.createElement('canvas')
@@ -574,19 +575,23 @@ function buildScene() {
   moon.raycast = () => {}
   planetGroup.add(moon)
 
-  // 莲花贴饰：莲 / 廉谐音，散布在海面上随星球转动（位置避开功能大陆与装饰大陆）
+  // 莲花贴饰：沿各自轨道绕星球巡行，与球体自转相互独立
   const lotusTex = createLotusTexture()
-  const LOTUS_SPOTS = [
-    [30, 10], [-25, -160], [-70, 180], [30, -85],
+  const lotusDefs = [
+    { radius: 1.18, speed: 0.18, phase: 0.2, lift: 0.32 },
+    { radius: 1.24, speed: -0.14, phase: 1.9, lift: 0.48 },
+    { radius: 1.12, speed: 0.16, phase: 3.5, lift: 0.58 },
+    { radius: 1.28, speed: -0.12, phase: 5.1, lift: 0.4 },
   ]
-  for (const [la, lo] of LOTUS_SPOTS) {
+  for (const def of lotusDefs) {
     const lotus = new THREE.Sprite(
       new THREE.SpriteMaterial({ map: lotusTex, transparent: true, depthWrite: false })
     )
     lotus.scale.set(0.14, 0.14, 1)
-    lotus.position.copy(latLonToVec3(la, lo, 1.05))
     lotus.raycast = () => {}
+    lotus.userData.orbit = def
     planetGroup.add(lotus)
+    lotuses.push(lotus)
   }
 
   // 清风令：沿行星环巡行的金色令牌
@@ -694,8 +699,17 @@ function tick(now) {
       moon.rotation.y += 0.004 * frameScale
     }
 
-    // 清风令沿环巡行（带轻微起伏）
     const tSec = now * 0.001
+    // 莲花沿独立轨道公转（带轻微起伏）
+    for (const lotus of lotuses) {
+      const { radius, speed, phase, lift } = lotus.userData.orbit
+      const a = tSec * speed + phase
+      lotus.position.set(
+        Math.cos(a) * radius,
+        Math.sin(a * 1.4) * lift,
+        Math.sin(a) * radius
+      )
+    }
     for (const token of tokens) {
       const { radius, speed, phase } = token.userData.orbit
       const a = tSec * speed + phase
@@ -893,6 +907,7 @@ onUnmounted(() => {
   renderer = null
   plates = []
   tokens = []
+  lotuses = []
 })
 </script>
 
