@@ -33,6 +33,8 @@ let renderer, scene, camera, planetGroup, moon
 let plates = [] // { mesh, module, normal(Vector3 local), sprite }
 let tokens = [] // 清风令环绕 sprite
 let rafId = 0
+let lastFrameTime = 0
+let needsRender = true
 let resizeObserver
 const raycaster = new THREE.Raycaster()
 const pointerNdc = new THREE.Vector2()
@@ -49,6 +51,7 @@ const drag = {
 }
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 const AUTO_SPEED = reduceMotion ? 0 : 0.0012
+const FRAME_INTERVAL = 1000 / 30
 
 // ———————————————————————— 工具函数 ————————————————————————
 
@@ -482,7 +485,7 @@ function buildScene() {
 
   // 星球本体
   const planet = new THREE.Mesh(
-    new THREE.SphereGeometry(1, 96, 96),
+    new THREE.SphereGeometry(1, 64, 64),
     new THREE.MeshStandardMaterial({
       map: createPlanetTexture(),
       roughness: 0.9,
@@ -523,7 +526,7 @@ function buildScene() {
 
   // 鎏金行星环
   const ring = new THREE.Mesh(
-    new THREE.RingGeometry(1.45, 2.15, 128),
+    new THREE.RingGeometry(1.45, 2.15, 64),
     new THREE.MeshBasicMaterial({
       map: createRingTexture(),
       transparent: true,
@@ -537,7 +540,7 @@ function buildScene() {
 
   // 大气辉光（菲涅尔）
   const atmosphere = new THREE.Mesh(
-    new THREE.SphereGeometry(1, 64, 64),
+    new THREE.SphereGeometry(1, 32, 32),
     new THREE.ShaderMaterial({
       vertexShader: /* glsl */ `
         varying vec3 vNormal;
@@ -648,46 +651,69 @@ function buildScene() {
 const tmpVec = new THREE.Vector3()
 const tmpQuat = new THREE.Quaternion()
 
-function tick() {
-  rafId = requestAnimationFrame(tick)
+function requestRender() {
+  needsRender = true
+  if (!rafId && renderer && !document.hidden) {
+    rafId = requestAnimationFrame(tick)
+  }
+}
 
-  // 惯性 + 自转
-  if (!drag.active) {
-    planetGroup.rotation.y += drag.velX
-    planetGroup.rotation.x = THREE.MathUtils.clamp(
-      planetGroup.rotation.x + drag.velY,
-      -1.1,
-      1.1
-    )
-    drag.velX *= 0.94
-    drag.velY *= 0.94
-    if (Math.abs(drag.velX) < 0.0004) drag.velX = 0
-    if (Math.abs(drag.velY) < 0.0004) drag.velY = 0
-    drag.idleFrames++
-    if (drag.idleFrames > 120) planetGroup.rotation.y += AUTO_SPEED
+function tick(now) {
+  rafId = 0
+  if (!renderer || document.hidden) return
+
+  const shouldRender = !reduceMotion || needsRender || drag.active
+  if (shouldRender && now - lastFrameTime >= FRAME_INTERVAL) {
+    const deltaSeconds = lastFrameTime
+      ? Math.min((now - lastFrameTime) / 1000, 0.1)
+      : FRAME_INTERVAL / 1000
+    const frameScale = deltaSeconds * 60
+    lastFrameTime = now
+
+    // 惯性 + 自转
+    if (!drag.active) {
+      planetGroup.rotation.y += drag.velX * frameScale
+      planetGroup.rotation.x = THREE.MathUtils.clamp(
+        planetGroup.rotation.x + drag.velY * frameScale,
+        -1.1,
+        1.1
+      )
+      const damping = Math.pow(0.94, frameScale)
+      drag.velX *= damping
+      drag.velY *= damping
+      if (Math.abs(drag.velX) < 0.0004) drag.velX = 0
+      if (Math.abs(drag.velY) < 0.0004) drag.velY = 0
+      drag.idleFrames += frameScale
+      if (drag.idleFrames > 120) planetGroup.rotation.y += AUTO_SPEED * frameScale
+    }
+
+    // 小卫星绕转
+    if (moon) {
+      const t = now * 0.00022
+      moon.position.set(Math.cos(t) * 1.95, Math.sin(t * 1.3) * 0.42 + 0.12, Math.sin(t) * 1.95)
+      moon.rotation.y += 0.004 * frameScale
+    }
+
+    // 清风令沿环巡行（带轻微起伏）
+    const tSec = now * 0.001
+    for (const token of tokens) {
+      const { radius, speed, phase } = token.userData.orbit
+      const a = tSec * speed + phase
+      token.position.set(
+        Math.cos(a) * radius,
+        Math.sin(a * 1.7) * 0.22,
+        Math.sin(a) * radius
+      )
+    }
+
+    updateLabels()
+    renderer.render(scene, camera)
+    needsRender = false
   }
 
-  // 小卫星绕转
-  if (moon) {
-    const t = performance.now() * 0.00022
-    moon.position.set(Math.cos(t) * 1.95, Math.sin(t * 1.3) * 0.42 + 0.12, Math.sin(t) * 1.95)
-    moon.rotation.y += 0.004
+  if (!reduceMotion || drag.active || needsRender) {
+    rafId = requestAnimationFrame(tick)
   }
-
-  // 清风令沿环巡行（带轻微起伏）
-  const tSec = performance.now() * 0.001
-  for (const token of tokens) {
-    const { radius, speed, phase } = token.userData.orbit
-    const a = tSec * speed + phase
-    token.position.set(
-      Math.cos(a) * radius,
-      Math.sin(a * 1.7) * 0.22,
-      Math.sin(a) * radius
-    )
-  }
-
-  updateLabels()
-  renderer.render(scene, camera)
 }
 
 /** 将大陆的世界坐标投影到屏幕，驱动 HTML 标签显隐与位置 */
@@ -744,6 +770,7 @@ function setHovered(plate) {
     l.active = plate ? l.key === plate.module.key : false
   }
   renderer.domElement.style.cursor = plate ? 'pointer' : 'grab'
+  requestRender()
 }
 
 function onPointerDown(e) {
@@ -756,6 +783,7 @@ function onPointerDown(e) {
   drag.idleFrames = 0
   renderer.domElement.setPointerCapture(e.pointerId)
   renderer.domElement.style.cursor = 'grabbing'
+  requestRender()
 }
 
 function onPointerMove(e) {
@@ -773,6 +801,7 @@ function onPointerMove(e) {
   drag.velY = dy * 0.005
   planetGroup.rotation.y += drag.velX
   planetGroup.rotation.x = THREE.MathUtils.clamp(planetGroup.rotation.x + drag.velY, -1.1, 1.1)
+  requestRender()
 }
 
 function onPointerUp(e) {
@@ -784,6 +813,7 @@ function onPointerUp(e) {
     const plate = pickPlate(e)
     if (plate) emit('select', plate.module)
   }
+  requestRender()
 }
 
 // ———————————————————————— 生命周期 ————————————————————————
@@ -804,10 +834,18 @@ function resize() {
   // 星球下沉幅度：竖屏更明显，宽屏收敛
   planetGroup.position.y = camera.aspect < 0.85 ? -0.35 : -0.15
   camera.updateProjectionMatrix()
+  requestRender()
+}
+
+function onVisibilityChange() {
+  cancelAnimationFrame(rafId)
+  rafId = 0
+  lastFrameTime = 0
+  if (!document.hidden) requestRender()
 }
 
 onMounted(() => {
-  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
+  renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.toneMapping = THREE.ACESFilmicToneMapping
@@ -825,12 +863,14 @@ onMounted(() => {
   el.addEventListener('pointermove', onPointerMove)
   el.addEventListener('pointerup', onPointerUp)
   el.addEventListener('pointercancel', onPointerUp)
+  document.addEventListener('visibilitychange', onVisibilityChange)
 
-  tick()
+  requestRender()
 })
 
 onUnmounted(() => {
   cancelAnimationFrame(rafId)
+  document.removeEventListener('visibilitychange', onVisibilityChange)
   resizeObserver?.disconnect()
   const el = renderer?.domElement
   if (el) {
