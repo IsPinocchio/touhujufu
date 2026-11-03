@@ -6,10 +6,10 @@
  */
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useGameStore } from '@/stores/game'
+import { useGameStore } from '@/stores/touhu'
 import { useAuthStore } from '@/stores/auth'
-import { api } from '@/utils/api'
-import { corruptClueOdds } from '@/utils/probability'
+import { touhuApi } from '@/utils/touhu/api'
+import { corruptClueOdds } from '@/utils/touhu/probability'
 
 const router = useRouter()
 const game = useGameStore()
@@ -25,7 +25,7 @@ const odds = computed(() => (corruptClueOdds() * 100).toFixed(1))
 
 onMounted(async () => {
   try {
-    serverSession.value = await api.currentSession()
+    serverSession.value = await touhuApi.currentSession()
   } catch {
     serverSession.value = null
   }

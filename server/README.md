@@ -41,6 +41,17 @@ server/
 `dto`（接口的请求/返回对象）、`Service`（业务逻辑）、`Controller`（HTTP 接口入口）。
 请求流转顺序：**Controller → Service → Mapper → MySQL**，与前端的「页面 → store → api → 服务器」一一对应。
 
+### 新增业务模块约定
+
+- 知识竞赛写在 `com.xingwang.touhu.quiz`，情景剧本写在 `com.xingwang.touhu.scenario`；
+  各模块内部按需要设置 `Controller`、`Service`、`entity/`、`mapper/`、`dto/`。
+- 新接口分别以 `/api/quiz/**`、`/api/scenario/**` 为前缀；模块管理接口放在各自模块，不堆入投壶的 `AdminController`。
+- 新表分别使用 `knowledge_*`、`scenario_*` 前缀，例如 `knowledge_quiz_questions`、`scenario_scripts`。
+- 现有 `question` 包、`QuizQuestion/QuizRecord`、`quiz_questions/quiz_records` 及 `/api/game/**/quiz`
+  都是投壶内部实现，不作为公共题库复用，也不要为了新模块修改其名称。
+- 模块之间不直接调用对方的 Mapper；公共层只复用认证、用户、统一返回和异常处理。
+  当前 `@MapperScan` 已覆盖上述新包，无需增加配置。
+
 ## 三、本地跑起来
 
 前置环境：JDK 17+、Maven 3.8+（IDEA 自带）、MySQL 8。
@@ -81,7 +92,7 @@ quiz_questions   判断题表      —— 合规判断 + 解析 + 依据条文
 - 前端不保存进度（无 localStorage），换设备/刷新后通过
   `GET /api/game/sessions/current` 拉取 question_plan + 全部明细记录，重放重建状态续玩，
   题目与选项顺序与开局完全一致；
-- 题目源文件在前端 `src/data/scenes.js`、`src/data/quiz.js`，改题后在仓库根目录执行
+- 题目源文件在前端 `src/data/touhu/scenes.js`、`src/data/touhu/quiz.js`，改题后在仓库根目录执行
   `node scripts/gen-seed-questions.mjs` 重新生成 `seed_questions.sql`。
 
 ### 大清洗的数据流（核心需求）
@@ -135,7 +146,7 @@ quiz_questions   判断题表      —— 合规判断 + 解析 + 依据条文
 
 - **分数服务端重算**：客户端只上报「投了哪个壶、指针是否进区间、抽到什么卡」，
   命中与否、得分、最终清算全部由服务端按规则推导（`SettlementService`），
-  与前端 `config.js` 的数值严格对齐（开局时服务端会下发 rules 快照，
+  与前端 `data/touhu/config.js` 的数值严格对齐（开局时服务端会下发 rules 快照，
   前端展示数值以快照为准，双端漂移能直接被发现）；
 - **轮次顺序校验**：服务端跟踪 `current_round`，跳轮/重复上报会被拒绝；
   答题必须在本轮投掷之后、题目必须与本局抽题结果一致；

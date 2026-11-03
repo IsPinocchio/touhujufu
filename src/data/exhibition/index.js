@@ -1,5 +1,5 @@
-import { partyKnowledge } from './knowledge'
-import { scenes } from './scenes'
+import { partyKnowledge } from '../knowledge'
+import { scenes } from '../touhu/scenes'
 
 const culturePanelDefs = [
   {

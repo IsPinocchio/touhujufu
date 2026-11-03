@@ -8,7 +8,7 @@
  */
 import { ref, onMounted } from 'vue'
 import SvgIcon from '@/components/common/SvgIcon.vue'
-import { api } from '@/utils/api'
+import { touhuApi } from '@/utils/touhu/api'
 import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps({
@@ -21,7 +21,7 @@ const boardError = ref(false)
 
 onMounted(async () => {
   try {
-    leaderboard.value = await api.leaderboard(50)
+    leaderboard.value = await touhuApi.leaderboard(50)
   } catch {
     boardError.value = true
   }

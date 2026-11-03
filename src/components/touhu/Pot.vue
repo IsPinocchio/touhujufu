@@ -5,7 +5,7 @@
  * 包含壶口椭圆、壶身曲线、壶耳、壶嘴等元素
  */
 import { computed } from 'vue'
-import { POTS } from '@/utils/probability'
+import { POTS } from '@/utils/touhu/probability'
 
 const props = defineProps({
   type: { type: String, required: true }, // corrupt | edge | clean

@@ -1,4 +1,4 @@
--- 题目种子数据：由 src/data/scenes.js 与 src/data/quiz.js 通过 scripts/gen-seed-questions.mjs 生成
+-- 题目种子数据：由 src/data/touhu/scenes.js 与 src/data/touhu/quiz.js 通过 scripts/gen-seed-questions.mjs 生成
 -- ON DUPLICATE KEY UPDATE 保证改题后重新生成本文件即可同步更新存量数据（enabled 开关除外，保留后台手动下线状态）
 
 INSERT INTO scene_questions (id, category, difficulty, scene_text, options_json, hint, source, enabled) VALUES

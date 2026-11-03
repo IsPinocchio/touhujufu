@@ -10,7 +10,7 @@ import { useToastStore } from '@/stores/toast'
 
 const TOKEN_KEY = 'touhu_token'
 
-// 登录态失效时的跳转钩子，由 main.js 注入（api.js 不能直接 import router，会循环依赖）
+// 登录态失效时的跳转钩子，由 main.js 注入（request.js 不能直接 import router，会循环依赖）
 let onUnauthorized = null
 export function setUnauthorizedHandler(fn) {
   onUnauthorized = fn
@@ -53,7 +53,7 @@ function toastError(message) {
 //   接口与页面不同源（端口不同），由后端 CORS 放行
 const API_PREFIX = import.meta.env.VITE_API_BASE ?? import.meta.env.BASE_URL.replace(/\/$/, '')
 
-async function request(path, { method = 'GET', body } = {}) {
+export async function request(path, { method = 'GET', body } = {}) {
   const headers = { 'Content-Type': 'application/json' }
   const token = getToken()
   if (token) {
@@ -104,25 +104,4 @@ async function request(path, { method = 'GET', body } = {}) {
     throw err
   }
   return json.data
-}
-
-export const api = {
-  // 认证
-  login: (username, password) => request('/auth/login', { method: 'POST', body: { username, password } }),
-  register: (data) => request('/auth/register', { method: 'POST', body: data }),
-  me: () => request('/auth/me'),
-
-  // 游戏
-  startSession: () => request('/game/sessions', { method: 'POST' }),
-  currentSession: () => request('/game/sessions/current'),
-  reportThrow: (sessionId, data) => request(`/game/sessions/${sessionId}/throws`, { method: 'POST', body: data }),
-  reportQuiz: (sessionId, data) => request(`/game/sessions/${sessionId}/quiz`, { method: 'POST', body: data }),
-  reportCardView: (sessionId, data) => request(`/game/sessions/${sessionId}/card-views`, { method: 'POST', body: data }),
-  confess: (sessionId) => request(`/game/sessions/${sessionId}/confess`, { method: 'POST' }),
-  finishSession: (sessionId) => request(`/game/sessions/${sessionId}/finish`, { method: 'POST' }),
-  abandonSession: (sessionId) => request(`/game/sessions/${sessionId}/abandon`, { method: 'POST' }),
-  myHistory: () => request('/game/my/history'),
-
-  // 排行榜
-  leaderboard: (limit = 50) => request(`/leaderboard?limit=${limit}`),
 }

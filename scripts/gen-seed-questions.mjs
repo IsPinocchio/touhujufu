@@ -6,11 +6,11 @@ import { writeFileSync } from 'node:fs'
 const esc = (s) =>
   s == null ? 'NULL' : "'" + String(s).replace(/\\/g, '\\\\').replace(/'/g, "''") + "'"
 
-const { scenes } = await import(pathToFileURL('src/data/scenes.js').href)
-const { quizQuestions } = await import(pathToFileURL('src/data/quiz.js').href)
+const { scenes } = await import(pathToFileURL('src/data/touhu/scenes.js').href)
+const { quizQuestions } = await import(pathToFileURL('src/data/touhu/quiz.js').href)
 
 const lines = []
-lines.push('-- 题目种子数据：由 src/data/scenes.js 与 src/data/quiz.js 通过 scripts/gen-seed-questions.mjs 生成')
+lines.push('-- 题目种子数据：由 src/data/touhu/scenes.js 与 src/data/touhu/quiz.js 通过 scripts/gen-seed-questions.mjs 生成')
 lines.push('-- ON DUPLICATE KEY UPDATE 保证改题后重新生成本文件即可同步更新存量数据（enabled 开关除外，保留后台手动下线状态）')
 lines.push('')
 lines.push(

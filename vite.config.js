@@ -6,7 +6,7 @@ import { fileURLToPath, URL } from 'node:url'
 export default defineConfig(({ command }) => ({
   plugins: [vue()],
   // 开发环境 '/'；生产构建为子路径 '/ldxq/'（部署在 https://www.maas.com/ldxq 下）
-  // 该值同时决定：① 静态资源引用路径 ② api.js 的接口前缀（import.meta.env.BASE_URL）
+  // 该值同时决定：① 静态资源引用路径 ② request.js 的接口前缀（import.meta.env.BASE_URL）
   base: command === 'build' ? '/ldxq/' : '/',
   resolve: {
     alias: {

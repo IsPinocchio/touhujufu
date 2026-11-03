@@ -9,9 +9,9 @@ import {
   TOKEN_BONUS,
   BREEZE_AWARD,
   APP_VERSION,
-} from '@/data/config'
-import { POTS, resolveThrow, calculateQuality, evaluateQuality } from '@/utils/probability'
-import { api } from '@/utils/api'
+} from '@/data/touhu/config'
+import { POTS, resolveThrow, calculateQuality, evaluateQuality } from '@/utils/touhu/probability'
+import { touhuApi } from '@/utils/touhu/api'
 
 // 上报队列：串行发送，保证服务端按轮次顺序校验通过
 // 单条失败自动重试 2 次；仍失败则置 store.reportError 提示用户，不再静默吞掉
@@ -55,7 +55,7 @@ export const useGameStore = defineStore('game', {
     finalReport: null, // 最终结算与讲评数据
     startTime: null, // 开局时间戳
     sessionId: null, // 后端对局 id
-    rules: null, // 服务端下发的规则快照（开局/续玩时携带），展示数值以此为准，缺省回退 config.js
+    rules: null, // 服务端下发的规则快照（开局/续玩时携带），展示数值以此为准，缺省回退 data/touhu/config.js
     reportError: null, // 成绩上报失败提示（重试后仍失败时置位，界面常驻提醒）
 
     // —— 蓄力相关状态 ——
@@ -91,11 +91,11 @@ export const useGameStore = defineStore('game', {
       this.$reset()
 
       // 服务端同一时刻只允许一局 PLAYING，先放弃残留对局再开新局
-      const current = await api.currentSession().catch(() => null)
+      const current = await touhuApi.currentSession().catch(() => null)
       if (current?.sessionId) {
-        await api.abandonSession(current.sessionId)
+        await touhuApi.abandonSession(current.sessionId)
       }
-      const session = await api.startSession()
+      const session = await touhuApi.startSession()
       this.sessionId = session.sessionId
       this.questionPlan = session.questionPlan
       this.rules = session.rules ?? null
@@ -268,7 +268,7 @@ export const useGameStore = defineStore('game', {
           inZone: result.hit, // 确定性判定：命中即指针落入区间
           cardType: result.cardType ? result.cardType.toUpperCase() : 'NONE',
         }
-        this._enqueueReport(() => api.reportThrow(sid, payload))
+        this._enqueueReport(() => touhuApi.reportThrow(sid, payload))
       }
 
       const enriched = {
@@ -337,7 +337,7 @@ export const useGameStore = defineStore('game', {
           quizId: this.currentQuiz?.id != null ? String(this.currentQuiz.id) : null,
           correct: !!correct,
         }
-        this._enqueueReport(() => api.reportQuiz(sid, payload))
+        this._enqueueReport(() => touhuApi.reportQuiz(sid, payload))
       }
       this.usedQuizRounds.push(this.round)
       this.currentQuiz = null
@@ -392,7 +392,7 @@ export const useGameStore = defineStore('game', {
       if (this.sessionId) {
         const sid = this.sessionId
         const roundNo = card.round ?? this.round
-        this._enqueueReport(() => api.reportCardView(sid, { roundNo }))
+        this._enqueueReport(() => touhuApi.reportCardView(sid, { roundNo }))
       }
       return true
     },
@@ -410,7 +410,7 @@ export const useGameStore = defineStore('game', {
       player.confessed = true
       if (this.sessionId) {
         const sid = this.sessionId
-        this._enqueueReport(() => api.confess(sid))
+        this._enqueueReport(() => touhuApi.confess(sid))
       }
     },
 
@@ -432,7 +432,7 @@ export const useGameStore = defineStore('game', {
         const sid = this.sessionId
         try {
           await reportQueue
-          const server = await api.finishSession(sid)
+          const server = await touhuApi.finishSession(sid)
           this.finalReport = { ...this.finalReport, server }
           // 以服务端权威分数为准（本地计算与之理论上一致，仅作展示兜底）
           this.player.score = server.finalScore
@@ -511,7 +511,7 @@ export const useGameStore = defineStore('game', {
       this.$reset()
       if (sid && active) {
         reportQueue = reportQueue
-          .then(() => api.abandonSession(sid))
+          .then(() => touhuApi.abandonSession(sid))
           .catch((e) => console.warn('[投壶拒腐] 放弃对局上报失败', e))
       }
     },

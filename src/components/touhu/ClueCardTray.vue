@@ -7,8 +7,8 @@
  * - 已查看与巡察后强制翻开的卡正面展示，不可再操作
  */
 import { ref, computed } from 'vue'
-import { useGameStore } from '@/stores/game'
-import { VIEW_COST } from '@/data/config'
+import { useGameStore } from '@/stores/touhu'
+import { VIEW_COST } from '@/data/touhu/config'
 import { playSound } from '@/utils/audio'
 import ClueCard from './ClueCard.vue'
 

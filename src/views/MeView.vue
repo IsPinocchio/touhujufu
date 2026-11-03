@@ -7,7 +7,7 @@
  * 数据全部来自后端 /api/game/my/history
  */
 import { ref, computed, onMounted } from 'vue'
-import { api } from '@/utils/api'
+import { touhuApi } from '@/utils/touhu/api'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
@@ -16,7 +16,7 @@ const loadError = ref(false)
 
 onMounted(async () => {
   try {
-    history.value = await api.myHistory()
+    history.value = await touhuApi.myHistory()
   } catch {
     loadError.value = true
   }

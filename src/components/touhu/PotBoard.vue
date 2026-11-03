@@ -9,8 +9,8 @@
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import Pot from './Pot.vue'
 import PowerBar from './PowerBar.vue'
-import { POTS, POT_KEYS } from '@/utils/probability'
-import { useGameStore } from '@/stores/game'
+import { POTS, POT_KEYS } from '@/utils/touhu/probability'
+import { useGameStore } from '@/stores/touhu'
 
 const props = defineProps({
   options: { type: Array, default: () => [] }, // [{ text, pot }] 当前场景选项

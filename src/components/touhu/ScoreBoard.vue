@@ -4,7 +4,7 @@
  * 未翻开的卡显示为深红未知圆点，翻开后区分「平安」（绿）/「线索」（红）
  */
 import { computed } from 'vue'
-import { TOTAL_ROUNDS } from '@/data/config'
+import { TOTAL_ROUNDS } from '@/data/touhu/config'
 
 const props = defineProps({
   player: { type: Object, default: null },

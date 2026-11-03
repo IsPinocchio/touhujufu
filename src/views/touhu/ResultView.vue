@@ -8,10 +8,10 @@
  */
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useGameStore } from '@/stores/game'
+import { useGameStore } from '@/stores/touhu'
 import { partyKnowledge } from '@/data/knowledge'
-import { COURSE_MIN_SCORE, COURSE_FOR_RISKY, COURSE_COUNT } from '@/data/config'
-import GameOverSummary from '@/components/game/GameOverSummary.vue'
+import { COURSE_MIN_SCORE, COURSE_FOR_RISKY, COURSE_COUNT } from '@/data/touhu/config'
+import GameOverSummary from '@/components/touhu/GameOverSummary.vue'
 import SvgIcon from '@/components/common/SvgIcon.vue'
 
 const router = useRouter()

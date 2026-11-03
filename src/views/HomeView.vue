@@ -5,7 +5,7 @@
  * 底部提供模块清单（星球标签被转走时的兜底入口）。
  */
 import { useRouter } from 'vue-router'
-import { useGameStore } from '@/stores/game'
+import { useGameStore } from '@/stores/touhu'
 import PlanetSphere from '@/components/planet/PlanetSphere.vue'
 
 const router = useRouter()

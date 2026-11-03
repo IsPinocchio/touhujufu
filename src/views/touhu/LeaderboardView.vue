@@ -5,7 +5,7 @@
  * - 数据来自后端 /api/leaderboard，与结算页内嵌榜单同源
  */
 import { ref, onMounted } from 'vue'
-import { api } from '@/utils/api'
+import { touhuApi } from '@/utils/touhu/api'
 import { useAuthStore } from '@/stores/auth'
 import SvgIcon from '@/components/common/SvgIcon.vue'
 
@@ -22,7 +22,7 @@ const penaltyLabel = {
 async function load() {
   loadError.value = false
   try {
-    leaderboard.value = await api.leaderboard(50)
+    leaderboard.value = await touhuApi.leaderboard(50)
   } catch {
     loadError.value = true
   }

@@ -1,10 +1,10 @@
 /**
  * 概率判定、投掷解析与出手质量计算工具
- * 核心数值全部集中在 POTS 与 config.js，便于调试与调整平衡性
+ * 核心数值全部集中在 POTS 与 data/touhu/config.js，便于调试与调整平衡性
  * 壶命中率与线索概率对应《投壶拒腐活动策划方案》2.2 / 2.5
  */
 
-import { CLUE_ODDS, CLUE_ODDS_MARKED } from '@/data/config'
+import { CLUE_ODDS, CLUE_ODDS_MARKED } from '@/data/touhu/config'
 
 // 三个壶的完整配置（方案 2.2：廉洁壶 30% / 擦边壶 60% / 腐败壶 80%）
 export const POTS = {

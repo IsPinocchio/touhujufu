@@ -2,12 +2,12 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 
 import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/views/LoginView.vue'
-import GameHomeView from '@/views/GameHomeView.vue'
-import GameView from '@/views/GameView.vue'
-import ResultView from '@/views/ResultView.vue'
+import GameHomeView from '@/views/touhu/GameHomeView.vue'
+import GameView from '@/views/touhu/GameView.vue'
+import ResultView from '@/views/touhu/ResultView.vue'
 import MeView from '@/views/MeView.vue'
-import LeaderboardView from '@/views/LeaderboardView.vue'
-import ExhibitionView from '@/views/ExhibitionView.vue'
+import LeaderboardView from '@/views/touhu/LeaderboardView.vue'
+import ExhibitionView from '@/views/exhibition/ExhibitionView.vue'
 import ComingSoon from '@/views/ComingSoon.vue'
 
 /**
@@ -65,7 +65,7 @@ router.afterEach((to) => {
 
 // 登录守卫：除登录页外，所有页面都要求登录；未登录跳登录页，登录后按 redirect 跳回（默认首页）
 // 注意：守卫里不能用 useAuthStore() 顶部导入（pinia 可能尚未激活），改为动态读取 token
-import { getToken } from '@/utils/api'
+import { getToken } from '@/utils/request'
 import { useToastStore } from '@/stores/toast'
 
 router.beforeEach((to, from) => {
