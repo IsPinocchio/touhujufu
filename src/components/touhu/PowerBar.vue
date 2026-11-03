@@ -4,7 +4,7 @@
  * - 横向长条，深灰底，最佳区间高亮，指针为竖线
  * - 松手后指针停住，父组件计算出手质量并回传评价文案
  */
-import { ref, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps({
   potType: { type: String, default: 'corrupt' }, // 用于按钮/区间配色
@@ -17,52 +17,87 @@ const props = defineProps({
 
 const emit = defineEmits(['release'])
 
-const pointer = ref(0) // 指针位置 0~1
 const holding = ref(false)
 const btnRef = ref(null)
+const trackRef = ref(null)
+const pointerRef = ref(null)
 
 /** 供 GameView 定位箭飞行起点 */
 defineExpose({ btnEl: () => btnRef.value })
 
-let rafId = null
-let lastTs = 0
-let dir = 1
+const FRAME_INTERVAL = 1000 / 60
+let rafId = 0
+let lastLogicTs = 0
+let lastRenderTs = 0
+let phase = 0
+let position = 0
+let trackWidth = 0
+
+function drawPointer() {
+  if (pointerRef.value) {
+    pointerRef.value.style.transform = `translateX(${position * trackWidth - 1.5}px)`
+  }
+}
+
+function measureTrack() {
+  trackWidth = trackRef.value?.clientWidth || 0
+  drawPointer()
+}
+
+function advanceTo(ts) {
+  const dt = Math.max(0, ts - lastLogicTs)
+  lastLogicTs = ts
+  phase = (phase + dt / props.traverseMs) % 2
+  position = phase <= 1 ? phase : 2 - phase
+}
 
 /** 开始蓄力：指针从 0 匀速移动，到两端反弹（往返） */
 function start() {
   holding.value = true
-  pointer.value = 0
-  dir = 1
-  lastTs = performance.now()
+  phase = 0
+  position = 0
+  measureTrack()
+  lastLogicTs = performance.now()
+  lastRenderTs = 0
   cancelAnimationFrame(rafId)
-  rafId = requestAnimationFrame(tick)
+  if (!document.hidden) rafId = requestAnimationFrame(tick)
 }
 
 function tick(ts) {
-  if (!holding.value) return
-  const dt = ts - lastTs
-  lastTs = ts
-  pointer.value += (dir * dt) / props.traverseMs
-  if (pointer.value >= 1) {
-    pointer.value = 1
-    dir = -1
-  } else if (pointer.value <= 0) {
-    pointer.value = 0
-    dir = 1
+  if (!holding.value || document.hidden) {
+    rafId = 0
+    return
+  }
+  advanceTo(ts)
+  if (ts - lastRenderTs >= FRAME_INTERVAL - 1) {
+    lastRenderTs = ts
+    drawPointer()
   }
   rafId = requestAnimationFrame(tick)
 }
 
-/** 松手：停住指针并发出位置 */
-function stop() {
+/** 松手：按实际松手时间补齐位置，停住指针并发出结果 */
+function stop(event) {
   if (!holding.value) return
+  const now = performance.now()
+  let releaseTs = now
+  if (!document.hidden && event) {
+    const eventTs = event.timeStamp
+    if (Number.isFinite(eventTs) && eventTs > 0) {
+      if (eventTs < lastLogicTs) releaseTs = lastLogicTs
+      else if (eventTs <= now) releaseTs = eventTs
+    }
+  }
+  if (!document.hidden) advanceTo(releaseTs)
   holding.value = false
   cancelAnimationFrame(rafId)
-  emit('release', pointer.value)
+  rafId = 0
+  drawPointer()
+  emit('release', position)
 }
 
 function onPointerDown(e) {
-  if (props.disabled) return
+  if (props.disabled || holding.value) return
   e.preventDefault()
   // 捕获指针，保证移动/松手事件不丢失
   try {
@@ -73,16 +108,40 @@ function onPointerDown(e) {
   start()
 }
 
-function onPointerUp() {
-  stop()
+function onPointerUp(event) {
+  stop(event)
 }
 
-onUnmounted(() => cancelAnimationFrame(rafId))
+function onVisibilityChange() {
+  if (!holding.value) return
+  if (document.hidden) {
+    advanceTo(performance.now())
+    drawPointer()
+    cancelAnimationFrame(rafId)
+    rafId = 0
+  } else {
+    lastLogicTs = performance.now()
+    lastRenderTs = 0
+    rafId = requestAnimationFrame(tick)
+  }
+}
+
+onMounted(() => {
+  measureTrack()
+  window.addEventListener('resize', measureTrack)
+  document.addEventListener('visibilitychange', onVisibilityChange)
+})
+
+onUnmounted(() => {
+  cancelAnimationFrame(rafId)
+  window.removeEventListener('resize', measureTrack)
+  document.removeEventListener('visibilitychange', onVisibilityChange)
+})
 </script>
 
 <template>
   <div class="power-bar">
-    <div class="power-bar__track">
+    <div ref="trackRef" class="power-bar__track">
       <!-- 最佳区间高亮 -->
       <div
         class="power-bar__zone"
@@ -90,7 +149,7 @@ onUnmounted(() => cancelAnimationFrame(rafId))
         :style="{ left: zoneStart * 100 + '%', width: zoneWidth * 100 + '%' }"
       ></div>
       <!-- 指针竖线 -->
-      <div class="power-bar__pointer" :style="{ left: pointer * 100 + '%' }"></div>
+      <div ref="pointerRef" class="power-bar__pointer"></div>
     </div>
 
     <div class="power-bar__label" :class="{ 'power-bar__label--result': evaluation }">
@@ -151,6 +210,7 @@ onUnmounted(() => cancelAnimationFrame(rafId))
 /* 指针竖线 */
 .power-bar__pointer {
   position: absolute;
+  left: 0;
   top: -4px;
   height: 30px;
   width: 3px;

@@ -78,6 +78,7 @@ const bodyPath = computed(() => {
     }"
     :style="{ width: size + 'px' }"
   >
+    <span class="pot__glow" aria-hidden="true"></span>
     <svg viewBox="0 0 100 160" class="pot__svg" role="img" :aria-label="POTS[type].name">
       <defs>
         <linearGradient :id="gradId" x1="0" y1="0" x2="1" y2="0">
@@ -144,18 +145,34 @@ const bodyPath = computed(() => {
 
 <style scoped>
 .pot {
+  position: relative;
   display: inline-block;
   transition: transform var(--dur-fast) ease, opacity var(--dur-fast) ease;
 }
 .pot--shaking {
   animation: shake 0.4s ease;
 }
+.pot__glow {
+  position: absolute;
+  inset: 6% -6% 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse,
+    rgba(230, 184, 96, 0.5) 0%,
+    rgba(230, 184, 96, 0.2) 45%,
+    rgba(230, 184, 96, 0) 72%
+  );
+  opacity: 0;
+  transform: scale(0.94);
+  pointer-events: none;
+}
 .pot__svg {
+  position: relative;
   display: block;
   width: 100%;
   height: auto;
   filter: drop-shadow(0 6px 8px rgba(43, 33, 24, 0.3));
-  transition: filter var(--dur-base) ease, transform var(--dur-base) ease;
+  transition: transform var(--dur-base) ease;
 }
 
 /* 未选中时暗淡 */
@@ -166,23 +183,24 @@ const bodyPath = computed(() => {
 /* 选中：高亮光环 + 轻微放大 */
 .pot--selected .pot__svg {
   transform: scale(1.05);
-  filter: drop-shadow(0 0 10px rgba(230, 184, 96, 0.85))
-    drop-shadow(0 6px 8px rgba(43, 33, 24, 0.3));
+}
+.pot--selected .pot__glow {
+  opacity: 0.45;
 }
 
-/* 蓄力：发光呼吸（瞄准特效） */
-.pot--charging .pot__svg {
+/* 蓄力：只让光晕呼吸，避免持续重算 SVG 滤镜 */
+.pot--charging .pot__glow {
   animation: pot-pulse 0.9s ease-in-out infinite;
 }
 @keyframes pot-pulse {
   0%,
   100% {
-    filter: drop-shadow(0 0 6px rgba(230, 184, 96, 0.6))
-      drop-shadow(0 6px 8px rgba(43, 33, 24, 0.3));
+    opacity: 0.35;
+    transform: scale(0.94);
   }
   50% {
-    filter: drop-shadow(0 0 20px rgba(230, 184, 96, 1))
-      drop-shadow(0 6px 8px rgba(43, 33, 24, 0.3));
+    opacity: 0.9;
+    transform: scale(1.08);
   }
 }
 </style>
