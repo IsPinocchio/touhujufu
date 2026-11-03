@@ -10,6 +10,12 @@
 # 同名变量时，实际取值仍以 compose 传入的环境变量为准。
 # ============================================================
 
+server:
+  servlet:
+    # 接口统一挂在 /ldxq_backend 前缀下，后端直接匹配完整路径
+    # 公司网关 location /ldxq_backend/ 原样转发即可（proxy_pass 不带斜杠）
+    context-path: /ldxq_backend
+
 spring:
   datasource:
     # 单机 compose 部署保持 mysql 即可；分机器部署改为数据库服务器 IP

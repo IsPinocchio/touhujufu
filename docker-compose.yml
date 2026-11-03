@@ -35,11 +35,12 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:?请在 .env 中设置 DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET:?请在 .env 中设置 JWT_SECRET}
       CORS_ORIGINS: ${CORS_ORIGINS:-*} # 允许跨域的前端来源
+      CONTEXT_PATH: ${CONTEXT_PATH:-/ldxq_backend} # 接口前缀，与网关 /ldxq_backend/ 原样转发配套
       TZ: Asia/Shanghai
     volumes:
       - ./deploy/config:/app/config:ro # 外挂配置挂载点：改此目录下 application.yml 后重启容器生效
     ports:
-      # 公司网关 :8089 的 /ldxq_backend/ 转发到 本机IP:BACKEND_PORT（转发时剥掉 /ldxq_backend 前缀）
+      # 公司网关的 /ldxq_backend/ 原样转发到 本机IP:BACKEND_PORT（proxy_pass 不带斜杠，无需剥离前缀）
       - "${BACKEND_PORT:-18081}:8080"
     depends_on:
       - mysql
