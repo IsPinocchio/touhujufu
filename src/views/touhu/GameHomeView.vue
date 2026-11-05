@@ -54,7 +54,7 @@ function continueGame() {
   if (!serverSession.value) return
   game.resumeFromServer(serverSession.value)
   if (game.phase === 'finalInspection') {
-    // 9 轮已完成未清算，直接进对局页展示最终巡视弹窗
+    // 9 轮已完成未清算，直接进对局页展示最终巡察弹窗
     router.push('/game/play')
     return
   }
@@ -83,11 +83,11 @@ function continueGame() {
     <section class="game-home__rules card anim-slide-up">
       <h2 class="game-home__heading">规则简介</h2>
       <ul class="game-home__list">
-        <li>共 <strong>9 轮</strong>场景抉择，每轮选择投向一个壶：<strong>腐败壶</strong>（口大易中，得分高）、<strong>擦边壶</strong>、<strong>廉洁壶</strong>（口小难中，得分低）。</li>
+        <li>共 <strong>9 轮</strong>场景抉择，每轮选择投向一个壶：<strong>腐败壶</strong>（口大易中）、<strong>擦边壶</strong>、<strong>廉洁壶</strong>（口小难中）。三壶命中得分相同——分数不挑壶，挑壶的是你的选择。</li>
         <li>命中腐败 / 擦边壶必抽一张<strong>线索卡</strong>扣在桌上——可以花钱查看，也可以赌它没事。</li>
         <li>第 2/4/6/8 轮穿插<strong>法规判断题</strong>，答对得一枚清风令，最终清算每枚 +10 分。</li>
         <li>第 4 轮后可<strong>主动交代</strong>；第 5 轮后<strong>中期巡察</strong>强制翻卡，有线索者将被「组织关注」，之后留下线索的概率大增。</li>
-        <li>第 9 轮后<strong>最终巡视</strong>：0 条线索平安着陆，1 条减半，2 条及以上清零。</li>
+        <li>第 9 轮后<strong>最终巡察</strong>：0 条线索平安着陆，1 条减半，2 条及以上清零。</li>
       </ul>
       <p class="game-home__note">
         腐败壶单次投掷实际留下线索的综合概率约为 <strong class="game-home__odds">{{ odds }}%</strong>——这是你手里的“赔率表”。

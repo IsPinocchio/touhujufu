@@ -1,6 +1,6 @@
 <script setup>
 /**
- * 巡视弹窗：中期巡察 / 最终巡视
+ * 巡察弹窗：中期巡察 / 最终巡察
  * - 中期：公开线索数量，警示但不结算
  * - 最终：翻开全部线索卡，等待清算
  */
@@ -23,8 +23,8 @@ const clueCount = computed(() => props.player.clueCards.filter((c) => c.type ===
     <div class="inspection anim-pop-in" role="dialog" aria-modal="true">
       <div class="inspection__banner" :class="{ 'inspection__banner--final': !isMid }">
         <span class="inspection__icon">{{ isMid ? '巡' : '终' }}</span>
-        <h2 class="inspection__title">{{ isMid ? '中期巡察' : '最终巡视' }}</h2>
-        <p class="inspection__sub">{{ isMid ? '巡视组进场' : '巡视组进驻 · 全面清查' }}</p>
+        <h2 class="inspection__title">{{ isMid ? '中期巡察' : '最终巡察' }}</h2>
+        <p class="inspection__sub">{{ isMid ? '巡察组进场' : '巡察组进驻 · 全面清查' }}</p>
       </div>
 
       <div class="inspection__body">

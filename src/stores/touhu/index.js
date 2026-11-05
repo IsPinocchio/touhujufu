@@ -10,7 +10,8 @@ import {
   BREEZE_AWARD,
   APP_VERSION,
 } from '@/data/touhu/config'
-import { POTS, resolveThrow, calculateQuality, evaluateQuality } from '@/utils/touhu/probability'
+import { POTS, POT_KEYS, shuffle, resolveThrow, calculateQuality, evaluateQuality } from '@/utils/touhu/probability'
+import { COLOR_KEYS } from '@/utils/touhu/colors'
 import { touhuApi } from '@/utils/touhu/api'
 
 // 上报队列：串行发送，保证服务端按轮次顺序校验通过
@@ -49,6 +50,8 @@ export const useGameStore = defineStore('game', {
     questionPlan: null, // 本局抽题结果（开局时后端下发）：{ scenes: [...9], quizzes: { 2: {...}, 4, 6, 8 } }
     usedQuizRounds: [], // 已答过判断题的轮次（每轮最多一次）
     currentScene: null, // 当前轮场景（选项已由服务端打乱）
+    potOrder: ['corrupt', 'edge', 'clean'], // 本轮三个壶的展示顺序（每轮随机打乱，防止固定「第 3 个永远廉洁壶」）
+    colorMap: { corrupt: 'copper', edge: 'slate', clean: 'green' }, // 本轮三个壶的配色主题（每轮随机分配，防止记住「绿色=廉洁壶」）
     currentQuiz: null, // 当前判断题
     currentRoundResults: [], // 本轮投掷结果
     cardSeq: 0, // 线索卡发号器，保证卡片 id 唯一
@@ -103,7 +106,7 @@ export const useGameStore = defineStore('game', {
       this.phase = 'playing'
       this.startTime = Date.now()
       this.player = this.createPlayer({ id: 'human', name: '你' })
-      this.currentScene = this.sceneForRound(1)
+      this.setRoundScene(1)
     },
 
     /**
@@ -164,12 +167,12 @@ export const useGameStore = defineStore('game', {
             .length >= 1
       }
 
-      // 6. 推断应处的阶段（重放顺序：答题 -> 交代窗口 -> 中期巡察 -> 最终巡视 -> 正常轮次）
+      // 6. 推断应处的阶段（重放顺序：答题 -> 交代窗口 -> 中期巡察 -> 最终巡察 -> 正常轮次）
       const lastDone = r - 1
       if (QUIZ_ROUNDS.includes(lastDone) && !this.usedQuizRounds.includes(lastDone)) {
         // 投掷完成但判断题未答：回到该轮答题
         this.round = lastDone
-        this.currentScene = this.sceneForRound(lastDone)
+        this.setRoundScene(lastDone)
         this.currentQuiz = this.quizForRound(lastDone)
         this.phase = 'quiz'
       } else if (r === CONFESS_ROUND + 1 && !state.confessed) {
@@ -188,7 +191,7 @@ export const useGameStore = defineStore('game', {
         this.phase = 'finalInspection'
       } else {
         this.round = r
-        this.currentScene = this.sceneForRound(r)
+        this.setRoundScene(r)
         this.phase = 'playing'
       }
     },
@@ -219,6 +222,14 @@ export const useGameStore = defineStore('game', {
     /** 取本局第 round 轮的判断题（仅 2/4/6/8 轮有） */
     quizForRound(round) {
       return this.questionPlan?.quizzes?.[round] ?? null
+    },
+
+    /** 载入第 round 轮场景，并随机打乱三个壶的展示顺序与配色（防止固定位置/颜色暴露壶类型） */
+    setRoundScene(round) {
+      this.currentScene = this.sceneForRound(round)
+      this.potOrder = shuffle(POT_KEYS)
+      const themes = shuffle(COLOR_KEYS)
+      this.colorMap = { corrupt: themes[0], edge: themes[1], clean: themes[2] }
     },
 
     /** 选壶：生成随机最佳区间，进入蓄力阶段；松手前可切换壶，松手后锁定 */
@@ -344,7 +355,7 @@ export const useGameStore = defineStore('game', {
       this.proceedRound()
     },
 
-    /** 流程推进：交代窗口 -> 中期巡察 -> 最终巡视 -> 下一轮 */
+    /** 流程推进：交代窗口 -> 中期巡察 -> 最终巡察 -> 下一轮 */
     proceedRound() {
       const r = this.round
       if (r === CONFESS_ROUND) {
@@ -356,7 +367,7 @@ export const useGameStore = defineStore('game', {
         this.player.marked = this.countClues(this.player) >= 1
         this.phase = 'midInspection'
       } else if (r === FINAL_ROUND) {
-        // 最终巡视：先翻开全部线索卡供弹窗展示
+        // 最终巡察：先翻开全部线索卡供弹窗展示
         this.revealAllCards()
         this.phase = 'finalInspection'
       } else {
@@ -367,7 +378,7 @@ export const useGameStore = defineStore('game', {
     /** 进入下一轮 */
     advanceToNextRound() {
       this.round += 1
-      this.currentScene = this.sceneForRound(this.round)
+      this.setRoundScene(this.round)
       this.phase = 'playing'
     },
 
@@ -419,7 +430,7 @@ export const useGameStore = defineStore('game', {
       this.advanceToNextRound()
     },
 
-    /** 最终巡视：翻开全部线索卡、清算、生成讲评报告（服务端重算为权威结果） */
+    /** 最终巡察：翻开全部线索卡、清算、生成讲评报告（服务端重算为权威结果） */
     async finalInspection() {
       this.revealAllCards()
       this.settlePlayer(this.player)

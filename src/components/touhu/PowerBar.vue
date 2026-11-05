@@ -7,7 +7,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps({
-  potType: { type: String, default: 'corrupt' }, // 用于按钮/区间配色
+  theme: { type: String, default: 'copper' }, // 用于按钮/区间配色
   zoneStart: { type: Number, default: 0 }, // 最佳区间起点（0~1）
   zoneWidth: { type: Number, default: 0.3 }, // 最佳区间宽度（0~1）
   traverseMs: { type: Number, default:1600 }, // 指针单程耗时（毫秒）
@@ -145,7 +145,7 @@ onUnmounted(() => {
       <!-- 最佳区间高亮 -->
       <div
         class="power-bar__zone"
-        :class="`power-bar__zone--${potType}`"
+        :class="`power-bar__zone--${theme}`"
         :style="{ left: zoneStart * 100 + '%', width: zoneWidth * 100 + '%' }"
       ></div>
       <!-- 指针竖线 -->
@@ -159,7 +159,7 @@ onUnmounted(() => {
     <button
       ref="btnRef"
       class="power-bar__btn"
-      :class="`power-bar__btn--${potType}`"
+      :class="`power-bar__btn--${theme}`"
       type="button"
       :disabled="disabled"
       @pointerdown="onPointerDown"
@@ -197,13 +197,13 @@ onUnmounted(() => {
   top: 0;
   height: 100%;
 }
-.power-bar__zone--corrupt {
+.power-bar__zone--copper {
   background: rgba(230, 184, 96, 0.65);
 }
-.power-bar__zone--edge {
+.power-bar__zone--slate {
   background: rgba(168, 188, 208, 0.65);
 }
-.power-bar__zone--clean {
+.power-bar__zone--green {
   background: rgba(143, 179, 154, 0.65);
 }
 
@@ -248,13 +248,13 @@ onUnmounted(() => {
   user-select: none;
   -webkit-user-select: none;
 }
-.power-bar__btn--corrupt {
+.power-bar__btn--copper {
   background: var(--color-copper);
 }
-.power-bar__btn--edge {
+.power-bar__btn--slate {
   background: var(--color-slate-blue);
 }
-.power-bar__btn--clean {
+.power-bar__btn--green {
   background: var(--color-green);
 }
 .power-bar__btn:active {

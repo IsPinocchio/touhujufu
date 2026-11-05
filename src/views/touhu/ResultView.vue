@@ -59,7 +59,7 @@ const courseItems = computed(() => partyKnowledge.slice(0, Math.max(requiredCour
 const shareText = computed(() => {
   const h = human.value
   if (!h) return ''
-  return `我在「投壶拒腐」中最终得分 ${h.score}，被巡视组发现 ${h.finalClueCount} 条线索（${penaltyLabel[h.penalty]}）。侥幸心理，害人不浅。`
+  return `我在「投壶拒腐」中最终得分 ${h.score}，被巡察组发现 ${h.finalClueCount} 条线索（${penaltyLabel[h.penalty]}）。侥幸心理，害人不浅。`
 })
 
 onMounted(() => {

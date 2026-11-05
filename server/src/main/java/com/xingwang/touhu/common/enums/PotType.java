@@ -5,9 +5,10 @@ package com.xingwang.touhu.common.enums;
  * 数据库存储枚举的 name() 字符串（如 "CORRUPT"），可读性好。
  */
 public enum PotType {
-  CORRUPT(30, 10), // 腐败壶：命中 30 分，查看卡 10 分
+  // 三壶命中得分统一 20 分（书记审定口径：得分不区分壶，结局由选择与线索决定）
+  CORRUPT(20, 10), // 腐败壶：命中 20 分，查看卡 10 分
   EDGE(20, 5),     // 擦边壶：命中 20 分，查看卡 5 分
-  CLEAN(10, 0);    // 廉洁壶：命中 10 分，不抽卡
+  CLEAN(20, 0);    // 廉洁壶：命中 20 分，不抽卡
 
   private final int score;    // 命中得分
   private final int viewCost; // 查看该壶抽到的卡所需分数

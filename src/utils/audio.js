@@ -131,7 +131,7 @@ export function playSound(name) {
         tone(220, 0.5, { type: 'sawtooth', endFreq: 60, gain: 0.2 })
         tone(110, 0.6, { type: 'sine', endFreq: 55, gain: 0.2, when: 0.02 })
         break
-      case 'warning': // 巡视警示：低沉的警音
+      case 'warning': // 巡察警示：低沉的警音
         tone(140, 0.5, { type: 'sine', endFreq: 100, gain: 0.18 })
         tone(180, 0.5, { type: 'sine', endFreq: 120, gain: 0.12, when: 0.15 })
         break

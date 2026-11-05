@@ -6,14 +6,15 @@
 
 import { CLUE_ODDS, CLUE_ODDS_MARKED } from '@/data/touhu/config'
 
-// 三个壶的完整配置（方案 2.2：廉洁壶 30% / 擦边壶 60% / 腐败壶 80%）
+// 三个壶的完整配置：难度模拟「腐败容易守廉难」——腐败壶口大易中、廉洁壶口小难中；
+// 三壶命中得分统一为 20 分（书记审定口径：结局只由选择与线索决定，不由壶的贵贱决定）
 export const POTS = {
   corrupt: {
     key: 'corrupt',
     name: '腐败壶',
     tagline: '口大 · 易中',
     hitRate: 0.8, // 基础命中率
-    score: 30, // 命中得分
+    score: 20, // 命中得分（三壶统一）
     bestZoneWidth: 0.3, // 蓄力最佳区间宽度（约 30%，宽）
     traverseMs: 2000, // 指针单程耗时（毫秒，慢 -> 容易中）
   },
@@ -23,17 +24,17 @@ export const POTS = {
     tagline: '口适中',
     hitRate: 0.6,
     score: 20,
-    bestZoneWidth: 0.2, // 约 20%，中
-    traverseMs: 1500, // 中速
+    bestZoneWidth: 0.25, // 约 20%，中
+    traverseMs: 1800, // 中速
   },
   clean: {
     key: 'clean',
     name: '廉洁壶',
     tagline: '口小 · 难中',
     hitRate: 0.3,
-    score: 10,
-    bestZoneWidth: 0.12, // 约 12%，窄
-    traverseMs: 1000, // 快 -> 难中，守廉难
+    score: 20,
+    bestZoneWidth: 0.2, // 约 12%，窄
+    traverseMs: 1500, // 快 -> 难中，守廉难
   },
 }
 

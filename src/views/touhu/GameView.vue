@@ -306,7 +306,7 @@ function onFinalDismiss() {
       {{ tipText }}
     </p>
 
-    <!-- 巡视 / 交代 / 答题弹窗 -->
+    <!-- 巡察 / 交代 / 答题弹窗 -->
     <InspectionModal
       v-if="store.phase === 'midInspection'"
       mode="mid"

@@ -1,7 +1,7 @@
 <script setup>
 /**
  * 三个壶的展示与选择区
- * 近大远小排列形成纵深感：腐败壶最近最大、擦边居中、廉洁壶最远最小
+ * 三壶同尺寸，展示顺序由 store.potOrder 决定（每轮随机打乱，防止固定位置暴露壶类型）
  * 选壶 -> 蓄力（PowerBar）-> 松手投掷，松手后 emit('throw') 交回父组件播放动画
  * 壶下方展示当前场景映射来的选项文字（按 pot 字段匹配，半透明底色 + 配色）
  * 对外暴露 getPotMouthEl / shake，供 GameView 定位箭头与触发命中震动
@@ -9,7 +9,7 @@
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import Pot from './Pot.vue'
 import PowerBar from './PowerBar.vue'
-import { POTS, POT_KEYS } from '@/utils/touhu/probability'
+import { POTS } from '@/utils/touhu/probability'
 import { useGameStore } from '@/stores/touhu'
 
 const props = defineProps({
@@ -21,7 +21,7 @@ const emit = defineEmits(['throw'])
 
 const store = useGameStore()
 
-// 三个壶的显示尺寸（近大远小），随视口宽度缩放，窄屏整体缩小避免溢出
+// 三个壶统一显示尺寸，随视口宽度缩放，窄屏整体缩小避免溢出
 const vw = ref(window.innerWidth)
 const onResize = () => {
   vw.value = window.innerWidth
@@ -30,11 +30,7 @@ onMounted(() => window.addEventListener('resize', onResize))
 onUnmounted(() => window.removeEventListener('resize', onResize))
 // 420px 及以上按原尺寸显示；窄屏等比缩小，最小 0.7 倍
 const potScale = computed(() => Math.min(1, Math.max(0.7, vw.value / 420)))
-const POT_SIZE = computed(() => ({
-  corrupt: Math.round(120 * potScale.value),
-  edge: Math.round(96 * potScale.value),
-  clean: Math.round(72 * potScale.value),
-}))
+const potSize = computed(() => Math.round(100 * potScale.value))
 
 // 各壶 DOM 引用，供箭头定位
 const potEls = reactive({})
@@ -82,6 +78,9 @@ const isSelected = (type) => store.selectedPot === type
 const isCharging = (type) => store.isCharging && store.selectedPot === type
 const isDimmed = (type) => !!store.selectedPot && store.selectedPot !== type
 
+/** 壶类型 -> 本轮配色主题（随机打乱，防止「绿色=廉洁壶」被记住） */
+const colorOf = (type) => store.colorMap?.[type] || 'copper'
+
 /** 选壶：进入蓄力阶段，松手前可切换壶 */
 function onSelect(type) {
   if (props.disabled) return
@@ -103,7 +102,7 @@ function onRelease(pos) {
   <div class="pot-board">
     <div class="pot-board__pots">
       <div
-        v-for="type in POT_KEYS"
+        v-for="type in store.potOrder"
         :key="type"
         class="pot-slot"
         :class="`pot-slot--${type}`"
@@ -119,14 +118,15 @@ function onRelease(pos) {
           <span class="pot-btn__pot" :ref="setPotEl(type)">
             <Pot
               :type="type"
-              :size="POT_SIZE[type]"
+              :theme="colorOf(type)"
+              :size="potSize"
               :shaking="shaking[type]"
               :selected="isSelected(type)"
               :charging="isCharging(type)"
               :dimmed="isDimmed(type)"
             />
           </span>
-          <span class="pot-btn__text" :class="`pot-btn__text--${type}`" :data-selected="isSelected(type)">
+          <span class="pot-btn__text" :class="`pot-btn__text--${colorOf(type)}`" :data-selected="isSelected(type)">
             {{ optionText(type) }}
           </span>
         </button>
@@ -138,7 +138,7 @@ function onRelease(pos) {
       v-if="store.selectedPot"
       ref="powerBarRef"
       :key="store.selectedPot"
-      :pot-type="store.selectedPot"
+      :theme="colorOf(store.selectedPot)"
       :zone-start="store.bestZoneStart"
       :zone-width="store.bestZoneWidth"
       :traverse-ms="POTS[store.selectedPot].traverseMs"
@@ -158,7 +158,7 @@ function onRelease(pos) {
   width: 100%;
 }
 
-/* 三壶一行：三列等宽，便于选项文字排布；壶本身近大远小 */
+/* 三壶一行：三列等宽，便于选项文字排布；壶本身同尺寸 */
 .pot-board__pots {
   display: flex;
   align-items: stretch;
@@ -219,28 +219,28 @@ function onRelease(pos) {
   transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease,
     font-weight var(--dur-fast) ease;
 }
-.pot-btn__text--corrupt {
+.pot-btn__text--copper {
   background: rgba(230, 184, 96, 0.16);
 }
-.pot-btn__text--edge {
+.pot-btn__text--slate {
   background: rgba(168, 188, 208, 0.16);
 }
-.pot-btn__text--clean {
+.pot-btn__text--green {
   background: rgba(143, 179, 154, 0.16);
 }
 
 .pot-btn__text[data-selected='true'] {
   font-weight: 700;
 }
-.pot-btn__text--corrupt[data-selected='true'] {
+.pot-btn__text--copper[data-selected='true'] {
   background: rgba(230, 184, 96, 0.32);
   border-color: rgba(184, 134, 63, 0.7);
 }
-.pot-btn__text--edge[data-selected='true'] {
+.pot-btn__text--slate[data-selected='true'] {
   background: rgba(168, 188, 208, 0.32);
   border-color: rgba(91, 113, 134, 0.7);
 }
-.pot-btn__text--clean[data-selected='true'] {
+.pot-btn__text--green[data-selected='true'] {
   background: rgba(143, 179, 154, 0.32);
   border-color: rgba(63, 92, 74, 0.7);
 }
