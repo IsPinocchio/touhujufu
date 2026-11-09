@@ -1,10 +1,15 @@
 <script setup>
+/**
+ * 展板详情弹框：标题 + 元信息 + 名言 + 图片位 + 分段正文 + 资料来源。
+ * 支持 Esc 关闭与焦点圈定（Tab 循环）。
+ */
 import { nextTick, onUnmounted, ref, watch } from 'vue'
 import SvgIcon from '@/components/common/SvgIcon.vue'
 
 const props = defineProps({
   panel: { type: Object, default: null },
   roomName: { type: String, default: '' },
+  accent: { type: String, default: 'var(--color-green)' },
 })
 const emit = defineEmits(['close'])
 
@@ -76,7 +81,7 @@ onUnmounted(() => {
         <article
           ref="dialogRef"
           class="exhibit-dialog anim-pop-in"
-          :style="{ '--panel-accent': panel.type === 'case' ? 'var(--color-red)' : 'var(--color-green)' }"
+          :style="{ '--panel-accent': accent }"
           role="dialog"
           aria-modal="true"
           aria-labelledby="exhibit-dialog-title"
@@ -100,22 +105,37 @@ onUnmounted(() => {
 
           <div id="exhibit-dialog-content" class="exhibit-dialog__content">
             <p class="exhibit-dialog__summary">{{ panel.summary }}</p>
-            <p v-if="panel.type === 'case'" class="exhibit-dialog__notice">
-              本展板为虚构教学情景，非真实案件。
-            </p>
-            <section v-if="panel.type === 'case'" class="exhibit-dialog__section">
-              <h3>教学情景</h3>
-              <p>{{ panel.scene }}</p>
+
+            <blockquote v-if="panel.quote" class="exhibit-dialog__quote">
+              <p>{{ panel.quote.text }}</p>
+              <cite>—— {{ panel.quote.from }}</cite>
+            </blockquote>
+
+            <figure v-if="panel.kind === 'mixed' || panel.kind === 'image'" class="exhibit-dialog__figure">
+              <img v-if="panel.image" :src="panel.image" :alt="panel.title" />
+              <div v-else class="exhibit-dialog__figure-placeholder" aria-hidden="true">
+                <span>{{ roomName.slice(0, 1) }}</span>
+                <small>影像资料 · 待补充</small>
+              </div>
+            </figure>
+
+            <dl v-if="panel.meta?.length" class="exhibit-dialog__meta">
+              <div v-for="item in panel.meta" :key="item.label" class="exhibit-dialog__meta-item">
+                <dt>{{ item.label }}</dt>
+                <dd>{{ item.value }}</dd>
+              </div>
+            </dl>
+
+            <section
+              v-for="section in panel.sections"
+              :key="section.heading"
+              class="exhibit-dialog__section"
+            >
+              <h3>{{ section.heading }}</h3>
+              <p>{{ section.body }}</p>
             </section>
-            <section v-if="panel.type === 'case'" class="exhibit-dialog__section exhibit-dialog__section--answer">
-              <h3>正确做法</h3>
-              <p>{{ panel.correct }}</p>
-            </section>
-            <section class="exhibit-dialog__section">
-              <h3>{{ panel.type === 'case' ? '警示要点' : '廉洁提醒' }}</h3>
-              <p>{{ panel.body }}</p>
-            </section>
-            <p v-if="panel.source" class="exhibit-dialog__source">内容来源：内部教学情景 {{ panel.source }}</p>
+
+            <p v-if="panel.source" class="exhibit-dialog__source">{{ panel.source }}</p>
           </div>
 
           <footer class="exhibit-dialog__footer">
@@ -143,9 +163,9 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 460px;
-  max-height: 84vh;
-  max-height: 84dvh;
+  max-width: 560px;
+  max-height: 86vh;
+  max-height: 86dvh;
   overflow: hidden;
   border: 1px solid rgba(184, 134, 63, 0.45);
   border-radius: var(--radius-lg);
@@ -172,7 +192,7 @@ onUnmounted(() => {
 
 .exhibit-dialog__title {
   color: var(--color-brown-dark);
-  font-size: 23px;
+  font-size: 24px;
   letter-spacing: 0.06em;
   line-height: 1.4;
 }
@@ -208,12 +228,98 @@ onUnmounted(() => {
   line-height: 1.8;
 }
 
-.exhibit-dialog__notice {
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  background: rgba(158, 43, 37, 0.08);
-  color: var(--color-red);
+.exhibit-dialog__quote {
+  padding: var(--gap-md) var(--gap-lg);
+  border-top: 1px solid rgba(184, 134, 63, 0.4);
+  border-bottom: 1px solid rgba(184, 134, 63, 0.4);
+  background: rgba(184, 134, 63, 0.1);
+  text-align: center;
+}
+
+.exhibit-dialog__quote p {
+  color: var(--color-brown-dark);
+  font-family: var(--font-serif);
+  font-size: 19px;
+  letter-spacing: 0.06em;
+  line-height: 1.8;
+}
+
+.exhibit-dialog__quote cite {
+  display: block;
+  margin-top: var(--gap-xs);
+  color: var(--color-ink-soft);
   font-size: 12px;
+  font-style: normal;
+}
+
+.exhibit-dialog__figure {
+  overflow: hidden;
+  border: 1px solid rgba(184, 134, 63, 0.4);
+  border-radius: var(--radius-sm);
+  aspect-ratio: 16 / 9;
+}
+
+.exhibit-dialog__figure img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.exhibit-dialog__figure-placeholder {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--gap-sm);
+  width: 100%;
+  height: 100%;
+  background:
+    linear-gradient(135deg, rgba(93, 61, 41, 0.08), rgba(93, 61, 41, 0.02)),
+    linear-gradient(180deg, #e6d8ba, #d3c19e);
+}
+
+.exhibit-dialog__figure-placeholder span {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  background: var(--panel-accent);
+  color: var(--color-cream);
+  font-family: var(--font-serif);
+  font-size: 30px;
+}
+
+.exhibit-dialog__figure-placeholder small {
+  color: rgba(74, 44, 31, 0.66);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+}
+
+.exhibit-dialog__meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--gap-sm);
+}
+
+.exhibit-dialog__meta-item {
+  padding: 10px 12px;
+  border: 1px solid rgba(122, 74, 43, 0.16);
+  border-radius: var(--radius-sm);
+  background: rgba(230, 213, 184, 0.3);
+}
+
+.exhibit-dialog__meta-item dt {
+  color: var(--panel-accent);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.exhibit-dialog__meta-item dd {
+  margin-top: 3px;
+  color: var(--color-brown-dark);
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .exhibit-dialog__section {
@@ -221,11 +327,6 @@ onUnmounted(() => {
   border-left: 3px solid var(--panel-accent);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   background: rgba(230, 213, 184, 0.42);
-}
-
-.exhibit-dialog__section--answer {
-  border-left-color: var(--color-green);
-  background: rgba(63, 92, 74, 0.07);
 }
 
 .exhibit-dialog__section h3 {

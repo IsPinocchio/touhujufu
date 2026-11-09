@@ -23,7 +23,8 @@ const routes = [
   { path: '/game/play', name: 'gamePlay', component: GameView, meta: { title: '投壶拒腐败' } },
   { path: '/result', name: 'result', component: ResultView, meta: { title: '结算' } },
   { path: '/game/leaderboard', name: 'leaderboard', component: LeaderboardView, meta: { title: '本周排行榜' } },
-  { path: '/exhibition', name: 'exhibition', component: ExhibitionView, meta: { title: '廉洁展馆' } },
+  // 廉洁展馆为全屏沉浸式展厅（bare 布局：隐藏全局顶栏/底栏/背景）
+  { path: '/exhibition', name: 'exhibition', component: ExhibitionView, meta: { title: '廉洁展馆', bare: true } },
   {
     path: '/quiz',
     name: 'quiz',
