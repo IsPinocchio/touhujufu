@@ -10,6 +10,7 @@ const props = defineProps({
   panel: { type: Object, default: null },
   roomName: { type: String, default: '' },
   accent: { type: String, default: 'var(--color-green)' },
+  theme: { type: String, default: 'parchment' },
 })
 const emit = defineEmits(['close'])
 
@@ -81,6 +82,7 @@ onUnmounted(() => {
         <article
           ref="dialogRef"
           class="exhibit-dialog anim-pop-in"
+          :class="{ 'exhibit-dialog--dark': theme === 'crimson' }"
           :style="{ '--panel-accent': accent }"
           role="dialog"
           aria-modal="true"
@@ -111,7 +113,7 @@ onUnmounted(() => {
               <cite>—— {{ panel.quote.from }}</cite>
             </blockquote>
 
-            <figure v-if="panel.kind === 'mixed' || panel.kind === 'image'" class="exhibit-dialog__figure">
+            <figure v-if="'image' in panel" class="exhibit-dialog__figure">
               <img v-if="panel.image" :src="panel.image" :alt="panel.title" />
               <div v-else class="exhibit-dialog__figure-placeholder" aria-hidden="true">
                 <span>{{ roomName.slice(0, 1) }}</span>
@@ -256,13 +258,19 @@ onUnmounted(() => {
   overflow: hidden;
   border: 1px solid rgba(184, 134, 63, 0.4);
   border-radius: var(--radius-sm);
-  aspect-ratio: 16 / 9;
+  background: #efe6d2;
 }
 
 .exhibit-dialog__figure img {
+  display: block;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  max-height: 52vh;
+  object-fit: contain;
+}
+
+.exhibit-dialog__figure:has(.exhibit-dialog__figure-placeholder) {
+  aspect-ratio: 16 / 9;
 }
 
 .exhibit-dialog__figure-placeholder {
@@ -350,6 +358,115 @@ onUnmounted(() => {
 
 .exhibit-dialog__footer {
   padding: var(--gap-md) var(--gap-lg) var(--gap-lg);
+}
+
+/* —— 警示厅深色档案风（crimson）：深炭灰底 + 冷青蓝信息 + 暗红警示 —— */
+.exhibit-dialog--dark {
+  --panel-accent: #d4574a;
+  border-color: rgba(148, 170, 192, 0.32);
+  background: linear-gradient(180deg, #24282e, #1b1e23);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+}
+
+.exhibit-dialog--dark .exhibit-dialog__header {
+  border-bottom-color: rgba(148, 170, 192, 0.18);
+}
+
+.exhibit-dialog--dark .exhibit-dialog__eyebrow {
+  color: #d4574a;
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  letter-spacing: 0.12em;
+}
+
+.exhibit-dialog--dark .exhibit-dialog__title {
+  color: #e8ecf1;
+}
+
+.exhibit-dialog--dark .exhibit-dialog__close {
+  color: #a9b8c6;
+}
+
+.exhibit-dialog--dark .exhibit-dialog__close:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.exhibit-dialog--dark .exhibit-dialog__summary {
+  color: #a9b8c6;
+}
+
+.exhibit-dialog--dark .exhibit-dialog__quote {
+  border-top-color: rgba(212, 87, 74, 0.4);
+  border-bottom-color: rgba(212, 87, 74, 0.4);
+  background: rgba(139, 46, 46, 0.16);
+}
+
+.exhibit-dialog--dark .exhibit-dialog__quote p {
+  color: #f0e2d0;
+}
+
+.exhibit-dialog--dark .exhibit-dialog__quote cite {
+  color: #8a96a3;
+}
+
+.exhibit-dialog--dark .exhibit-dialog__figure {
+  border-color: rgba(74, 158, 255, 0.28);
+  background: #101316;
+}
+
+.exhibit-dialog--dark .exhibit-dialog__figure-placeholder {
+  background: linear-gradient(180deg, #1d2126, #14171b);
+}
+
+.exhibit-dialog--dark .exhibit-dialog__figure-placeholder span {
+  border-radius: 4px;
+  background: #8b2e2e;
+  color: #f0e2d0;
+}
+
+.exhibit-dialog--dark .exhibit-dialog__figure-placeholder small {
+  color: rgba(159, 178, 200, 0.6);
+}
+
+.exhibit-dialog--dark .exhibit-dialog__meta-item {
+  border-color: rgba(148, 170, 192, 0.2);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.exhibit-dialog--dark .exhibit-dialog__meta-item dt {
+  color: #d4574a;
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+}
+
+.exhibit-dialog--dark .exhibit-dialog__meta-item dd {
+  color: #dfe6ec;
+}
+
+.exhibit-dialog--dark .exhibit-dialog__section {
+  border-left-color: #8b2e2e;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.exhibit-dialog--dark .exhibit-dialog__section h3 {
+  color: #8fb4dd;
+}
+
+.exhibit-dialog--dark .exhibit-dialog__section p {
+  color: #a9b8c6;
+}
+
+.exhibit-dialog--dark .exhibit-dialog__source {
+  color: #6b7683;
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+}
+
+.exhibit-dialog--dark .exhibit-dialog__footer .btn--primary {
+  border-color: #8b2e2e;
+  background: #8b2e2e;
+  box-shadow: 0 6px 18px rgba(139, 46, 46, 0.35);
+}
+
+.exhibit-dialog--dark .exhibit-dialog__footer .btn--primary:hover {
+  background: #a03a3a;
 }
 
 @media (max-width: 480px) {

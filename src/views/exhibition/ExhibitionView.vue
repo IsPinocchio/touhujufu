@@ -125,6 +125,7 @@ function openPanel(panel) {
       :panel="selectedPanel"
       :room-name="currentRoom.name"
       :accent="currentRoom.accent"
+      :theme="currentRoom.theme"
       @close="selectedPanel = null"
     />
   </div>

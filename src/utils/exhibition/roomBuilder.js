@@ -69,6 +69,19 @@ function createPanelNode(panel, room, index, targets) {
       })
     )
     group.add(surface)
+  } else if (room.theme === 'crimson') {
+    // 警示厅案卷卡：无框透明底撕裂卡片直接上墙，微微斜切（错落案卷感）
+    const surface = new THREE.Mesh(
+      new THREE.PlaneGeometry(w, h),
+      new THREE.MeshBasicMaterial({
+        map: createPanelTexture(panel, room, index),
+        transparent: true,
+        toneMapped: false,
+      })
+    )
+    surface.position.z = 0.02
+    group.add(surface)
+    group.rotation.z = ((index % 3) - 1) * 0.012
   } else if (panel.kind === 'scroll') {
     // 卷轴画框：细木框 + 左右卷轴杆 + 展签
     const frameMaterial = new THREE.MeshStandardMaterial({
@@ -236,16 +249,18 @@ function planSpots(room) {
   return specs
 }
 
-function createDoorNode(nextRoom, targets, layout = { wall: 'right', z: 1.9 }) {
+function createDoorNode(nextRoom, targets, layout = { wall: 'right', z: 1.9 }, theme = 'parchment') {
   const group = new THREE.Group()
-  const trimMaterial = new THREE.MeshStandardMaterial({ color: '#5d3d29', roughness: 0.85 })
-  const goldMaterial = new THREE.MeshStandardMaterial({ color: '#b8863f', roughness: 0.65 })
+  const dark = theme === 'crimson'
+  // 警示厅的门做隐蔽化：与墙面近色，弱化描金
+  const trimMaterial = new THREE.MeshStandardMaterial({ color: dark ? '#2b2e33' : '#5d3d29', roughness: 0.9 })
+  const goldMaterial = new THREE.MeshStandardMaterial({ color: dark ? '#5c5a55' : '#b8863f', roughness: 0.6 })
 
   const frameMaterial = new THREE.MeshStandardMaterial({
-    color: '#b8863f',
+    color: dark ? '#34383e' : '#b8863f',
     emissive: nextRoom.accent,
     emissiveIntensity: 0,
-    roughness: 0.65,
+    roughness: 0.75,
   })
   const frame = new THREE.Mesh(new THREE.BoxGeometry(1.95, 3.05, 0.12), frameMaterial)
   frame.position.set(0, 1.52, 0)
@@ -255,11 +270,23 @@ function createDoorNode(nextRoom, targets, layout = { wall: 'right', z: 1.9 }) {
   door.position.set(0, 1.43, 0.08)
   group.add(door)
 
+  // 双嵌板：门面凹凸层次
+  const insetMaterial = new THREE.MeshStandardMaterial({ color: dark ? '#23262b' : '#4e3320', roughness: 0.92 })
+  for (const py of [0.72, 1.56]) {
+    const inset = new THREE.Mesh(new THREE.BoxGeometry(1.26, 0.72, 0.03), insetMaterial)
+    inset.position.set(0, py, 0.12)
+    group.add(inset)
+  }
+  // 门楣压顶
+  const lintel = new THREE.Mesh(new THREE.BoxGeometry(2.12, 0.2, 0.16), trimMaterial)
+  lintel.position.set(0, 3.12, 0)
+  group.add(lintel)
+
   const sign = new THREE.Mesh(
-    new THREE.PlaneGeometry(1.46, 0.92),
-    new THREE.MeshBasicMaterial({ map: createDoorTexture(nextRoom), toneMapped: false })
+    new THREE.PlaneGeometry(1.32, 0.8),
+    new THREE.MeshBasicMaterial({ map: createDoorTexture(nextRoom, dark), toneMapped: false })
   )
-  sign.position.set(0, 1.82, 0.135)
+  sign.position.set(0, 2.42, 0.145)
   group.add(sign)
 
   const handle = new THREE.Mesh(new THREE.SphereGeometry(0.07, 16, 12), goldMaterial)
@@ -285,11 +312,12 @@ function createDoorNode(nextRoom, targets, layout = { wall: 'right', z: 1.9 }) {
   return group
 }
 
-/** 墙裙 + 腰线：低护墙板避免大面积平涂 */
-function createWainscot() {
+/** 墙裙 + 腰线：低护墙板避免大面积平涂；警示厅用深色护墙板 */
+function createWainscot(theme) {
   const group = new THREE.Group()
-  const panelMaterial = new THREE.MeshStandardMaterial({ color: '#d3c3a2', roughness: 0.9 })
-  const railMaterial = new THREE.MeshStandardMaterial({ color: '#8a6b45', roughness: 0.7 })
+  const dark = theme === 'crimson'
+  const panelMaterial = new THREE.MeshStandardMaterial({ color: dark ? '#26292e' : '#d3c3a2', roughness: 0.9 })
+  const railMaterial = new THREE.MeshStandardMaterial({ color: dark ? '#3a3d42' : '#8a6b45', roughness: 0.7 })
   const H = 0.42
 
   const back = new THREE.Mesh(new THREE.BoxGeometry(ROOM.width, H, 0.03), panelMaterial)
@@ -332,7 +360,7 @@ function createDecalNode(decal, room) {
       toneMapped: false,
     })
   )
-  placeFlatOnWall(node, decal)
+  placeFlatOnWall(node, decal, decal.offset ?? 0.02)
   return node
 }
 
@@ -373,53 +401,16 @@ function createPrefaceNode(room) {
   return node
 }
 
-/** 警示厅中央装置：悬挂青铜警钟（参考警示教育展馆的悬钟造景） */
-function createBellNode() {
-  const group = new THREE.Group()
-  const bronze = new THREE.MeshStandardMaterial({
-    color: '#7d5f38',
-    metalness: 0.55,
-    roughness: 0.5,
-    side: THREE.DoubleSide,
-  })
-  // 钟体剖面：自钟口向上收窄
-  const profile = [
-    [0.02, 0], [0.52, 0.02], [0.58, 0.08], [0.5, 0.18], [0.44, 0.55],
-    [0.4, 0.95], [0.32, 1.2], [0.14, 1.34], [0.06, 1.44],
-  ].map(([x, y]) => new THREE.Vector2(x, y))
-  const bell = new THREE.Mesh(new THREE.LatheGeometry(profile, 28), bronze)
-  const rimY = 2.45
-  bell.position.set(0, rimY, -1.3)
-  group.add(bell)
-
-  // 钟口内锤
-  const clapper = new THREE.Mesh(
-    new THREE.SphereGeometry(0.1, 12, 10),
-    new THREE.MeshStandardMaterial({ color: '#4a3a2c', roughness: 0.6 })
-  )
-  clapper.position.set(0, rimY + 0.12, -1.3)
-  group.add(clapper)
-
-  // 悬链
-  const bellTop = rimY + 1.44
-  const chain = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.03, 0.03, ROOM.height - bellTop, 8),
-    clapper.material
-  )
-  chain.position.set(0, (ROOM.height + bellTop) / 2, -1.3)
-  group.add(chain)
-  return group
-}
-
 /** 搭建整间展厅，返回 { group, targets }；targets 供射线拾取 */
 export function buildRoom(room, rooms) {
   const group = new THREE.Group()
   const targets = []
+  const dark = room.theme === 'crimson'
   const wallMaterial = new THREE.MeshStandardMaterial({
-    map: createWallTexture(),
+    map: createWallTexture(room.theme),
     roughness: 0.95,
   })
-  const trimMaterial = new THREE.MeshStandardMaterial({ color: '#5d3d29', roughness: 0.85 })
+  const trimMaterial = new THREE.MeshStandardMaterial({ color: dark ? '#2e2b28' : '#5d3d29', roughness: 0.85 })
 
   const floor = new THREE.Mesh(
     new THREE.PlaneGeometry(ROOM.width, ROOM.depth),
@@ -437,6 +428,12 @@ export function buildRoom(room, rooms) {
   ceiling.rotation.x = Math.PI / 2
   ceiling.position.y = ROOM.height
   group.add(ceiling)
+
+  // 警示厅暗色调：地面/吊顶乘色压暗一档，与中灰墙面保持协调（无额外渲染开销）
+  if (dark) {
+    floor.material.color.set('#94897b')
+    ceiling.material.color.set('#b3aca0')
+  }
   const lightStrip = new THREE.Mesh(
     new THREE.BoxGeometry(ROOM.width * 0.62, 0.04, ROOM.depth * 0.62),
     new THREE.MeshBasicMaterial({ color: '#fff6e2' })
@@ -479,7 +476,7 @@ export function buildRoom(room, rooms) {
   backCrown.position.set(0, ROOM.height - 0.06, -ROOM.depth / 2 + 0.09)
   group.add(backCrown)
 
-  group.add(createWainscot())
+  group.add(createWainscot(room.theme))
 
   const plaque = new THREE.Mesh(
     new THREE.PlaneGeometry(3.6, 0.9),
@@ -489,7 +486,6 @@ export function buildRoom(room, rooms) {
   group.add(plaque)
   group.add(createPrefaceNode(room))
   room.decals?.forEach((decal) => group.add(createDecalNode(decal, room)))
-  if (room.centerpiece === 'bell') group.add(createBellNode())
 
   room.panels.forEach((panel, index) => {
     group.add(createPanelNode(panel, room, index, targets))
@@ -499,7 +495,7 @@ export function buildRoom(room, rooms) {
   })
 
   const nextRoom = rooms.find((item) => item.id !== room.id) || room
-  group.add(createDoorNode(nextRoom, targets, room.doorLayout))
+  group.add(createDoorNode(nextRoom, targets, room.doorLayout, room.theme))
 
   return { group, targets }
 }
