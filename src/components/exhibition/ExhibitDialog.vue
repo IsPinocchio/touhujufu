@@ -3,7 +3,7 @@
  * 展板详情弹框：标题 + 元信息 + 名言 + 图片位 + 分段正文 + 资料来源。
  * 支持 Esc 关闭与焦点圈定（Tab 循环）。
  */
-import { nextTick, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import SvgIcon from '@/components/common/SvgIcon.vue'
 
 const props = defineProps({
@@ -16,6 +16,7 @@ const emit = defineEmits(['close'])
 
 const dialogRef = ref(null)
 const closeButtonRef = ref(null)
+const hasProfile = computed(() => props.panel && 'image' in props.panel && props.panel.meta?.length)
 let previousActiveElement = null
 let previousBodyOverflow = ''
 
@@ -113,20 +114,37 @@ onUnmounted(() => {
               <cite>—— {{ panel.quote.from }}</cite>
             </blockquote>
 
-            <figure v-if="'image' in panel" class="exhibit-dialog__figure">
-              <img v-if="panel.image" :src="panel.image" :alt="panel.title" />
-              <div v-else class="exhibit-dialog__figure-placeholder" aria-hidden="true">
-                <span>{{ roomName.slice(0, 1) }}</span>
-                <small>影像资料 · 待补充</small>
-              </div>
-            </figure>
+            <div v-if="hasProfile" class="exhibit-dialog__profile">
+              <dl class="exhibit-dialog__meta">
+                <div v-for="item in panel.meta" :key="item.label" class="exhibit-dialog__meta-item">
+                  <dt>{{ item.label }}</dt>
+                  <dd>{{ item.value }}</dd>
+                </div>
+              </dl>
+              <figure class="exhibit-dialog__figure">
+                <img v-if="panel.image" :src="panel.image" :alt="panel.title" />
+                <div v-else class="exhibit-dialog__figure-placeholder" aria-hidden="true">
+                  <span>{{ roomName.slice(0, 1) }}</span>
+                  <small>影像资料 · 待补充</small>
+                </div>
+              </figure>
+            </div>
+            <template v-else>
+              <figure v-if="'image' in panel" class="exhibit-dialog__figure">
+                <img v-if="panel.image" :src="panel.image" :alt="panel.title" />
+                <div v-else class="exhibit-dialog__figure-placeholder" aria-hidden="true">
+                  <span>{{ roomName.slice(0, 1) }}</span>
+                  <small>影像资料 · 待补充</small>
+                </div>
+              </figure>
 
-            <dl v-if="panel.meta?.length" class="exhibit-dialog__meta">
-              <div v-for="item in panel.meta" :key="item.label" class="exhibit-dialog__meta-item">
-                <dt>{{ item.label }}</dt>
-                <dd>{{ item.value }}</dd>
-              </div>
-            </dl>
+              <dl v-if="panel.meta?.length" class="exhibit-dialog__meta">
+                <div v-for="item in panel.meta" :key="item.label" class="exhibit-dialog__meta-item">
+                  <dt>{{ item.label }}</dt>
+                  <dd>{{ item.value }}</dd>
+                </div>
+              </dl>
+            </template>
 
             <section
               v-for="section in panel.sections"
@@ -223,6 +241,11 @@ onUnmounted(() => {
   overscroll-behavior: contain;
 }
 
+/* 防止 flex 收缩把图片区块压塌：内容超高应滚动而非压缩 */
+.exhibit-dialog__content > * {
+  flex-shrink: 0;
+}
+
 .exhibit-dialog__summary {
   color: var(--color-ink-soft);
   font-family: var(--font-serif);
@@ -307,6 +330,38 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: var(--gap-sm);
+}
+
+/* 人物档案行：左元信息、右照片，行高只由信息列决定 */
+.exhibit-dialog__profile {
+  display: flex;
+  align-items: stretch;
+  gap: var(--gap-md);
+}
+
+.exhibit-dialog__profile .exhibit-dialog__meta {
+  flex: 1 1 0;
+  grid-template-columns: 1fr;
+  min-width: 0;
+}
+
+.exhibit-dialog__profile .exhibit-dialog__figure,
+.exhibit-dialog__profile .exhibit-dialog__figure:has(.exhibit-dialog__figure-placeholder) {
+  position: relative;
+  flex: 0 0 38%;
+  aspect-ratio: auto;
+}
+
+/* 绝对定位填充：照片不参与行高计算，行高只由左栏文字决定 */
+.exhibit-dialog__profile .exhibit-dialog__figure img,
+.exhibit-dialog__profile .exhibit-dialog__figure-placeholder {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  object-fit: cover;
+  object-position: top center;
 }
 
 .exhibit-dialog__meta-item {

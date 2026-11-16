@@ -68,7 +68,7 @@ export const exhibitionRooms = [
     prefaceLayout: { wall: 'left', z: 2.25, y: 2.3, w: 1.6, h: 3.2 },
     decals: [
       { type: 'emblem', wall: 'left', z: 3.7, y: 2.3, w: 1.0, h: 1.0 },
-      { type: 'fallline', wall: 'left', z: -1.2, y: 3.68, w: 2.2, h: 0.9 },
+      { type: 'fallline', wall: 'left', z: -1.2, y: 3.13, w: 2.2, h: 0.9 },
       { type: 'mirror', wall: 'back', x: 0.4, y: 2.35, w: 1.5, h: 1.5 },
       { type: 'wallline', wall: 'back', x: 0, y: 1.9, w: 8.4, h: 2.63 },
       { type: 'wallline', wall: 'left', z: 0, y: 1.9, w: 8.4, h: 2.63, dashes: [415, 1048] },

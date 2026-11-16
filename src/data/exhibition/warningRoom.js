@@ -220,7 +220,7 @@ export const warningPanels = [
       },
     ],
     source: '据中央纪委国家监委网站、电视专题片《永远吹冲锋号》整理',
-    layout: { wall: 'left', z: -1.2, y: 2.25, w: 2.2, h: 1.5 },
+    layout: { wall: 'left', z: -1.2, y: 1.68, w: 2.2, h: 1.5 },
   },
   {
     id: 'warning-zhou-yanti',

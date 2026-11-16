@@ -55,6 +55,7 @@ export const modelPanels = [
     meta: [
       { label: '朝代', value: '明' },
       { label: '身份', value: '南京右都御史、应天巡抚' },
+      { label: '关键词', value: '海青天' },
     ],
     sections: [
       {
@@ -84,6 +85,7 @@ export const modelPanels = [
     meta: [
       { label: '朝代', value: '东汉' },
       { label: '身份', value: '东莱太守' },
+      { label: '关键词', value: '四知太守' },
     ],
     sections: [
       {
@@ -108,6 +110,7 @@ export const modelPanels = [
     meta: [
       { label: '朝代', value: '三国·吴' },
       { label: '身份', value: '郁林太守' },
+      { label: '关键词', value: '廉石传世' },
     ],
     sections: [
       {
@@ -136,6 +139,7 @@ export const modelPanels = [
     meta: [
       { label: '朝代', value: '明' },
       { label: '身份', value: '兵部尚书' },
+      { label: '关键词', value: '两袖清风' },
     ],
     sections: [
       {
@@ -161,6 +165,7 @@ export const modelPanels = [
     meta: [
       { label: '身份', value: '河南兰考县委书记' },
       { label: '时间', value: '1962—1964年在兰考' },
+      { label: '关键词', value: '人民公仆' },
     ],
     sections: [
       {
@@ -187,6 +192,7 @@ export const modelPanels = [
     meta: [
       { label: '身份', value: '原建行来凤支行干部' },
       { label: '荣誉', value: '共和国勋章获得者' },
+      { label: '关键词', value: '深藏功名' },
     ],
     sections: [
       {
