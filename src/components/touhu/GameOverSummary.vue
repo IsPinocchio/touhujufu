@@ -1,8 +1,8 @@
 <script setup>
 /**
  * 讲评：清算后的最终呈现
- * - 真实玩家排行榜（后端数据，投过风险壶者已被记录在案，等待大清洗）
- * - 侥幸逃脱 / 被清零 提示
+ * - 本局数据回顾（答对题数 / 投壶命中率 / 清风令）
+ * - 真实玩家排行榜（后端数据）
  * - 一句 30 秒感受
  * - 主持人收尾语
  */
@@ -12,7 +12,7 @@ import { touhuApi } from '@/utils/touhu/api'
 import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps({
-  report: { type: Object, required: true }, // { escaped, zeroed, confessedClean, feeling, server? }
+  report: { type: Object, required: true }, // { correctAnswers, totalRounds, throwCount, hitCount, quizCorrect, feeling, server? }
 })
 
 const auth = useAuthStore()
@@ -27,12 +27,26 @@ onMounted(async () => {
   }
 })
 
-const CLOSING =
-  '现实里没有侥幸赔率表给你看——现实的概率是：只要你一直伸手，被抓只是时间问题。'
+const CLOSING = '守廉不难，难在每一次都选对——把每一次抉择，都当作组织在看着。'
 </script>
 
 <template>
   <div class="summary">
+    <!-- 本局数据回顾 -->
+    <section class="summary__section">
+      <h3 class="summary__heading">本局回顾</h3>
+      <ul class="summary__facts">
+        <li>情景抉择：答对 <strong>{{ report.correctAnswers }}</strong> / {{ report.totalRounds }} 题</li>
+        <li>
+          投壶定分：{{ report.throwCount }} 投 {{ report.hitCount }} 中
+          <template v-if="report.throwCount > 0">
+            （命中率 {{ Math.round((report.hitCount / report.throwCount) * 100) }}%）
+          </template>
+        </li>
+        <li>法规判断：答对 {{ report.quizCorrect }} 题，清风令清算加分已并入总分</li>
+      </ul>
+    </section>
+
     <!-- 真实玩家排行榜（自然周榜，每周一重置） -->
     <section class="summary__section">
       <h3 class="summary__heading">
@@ -52,39 +66,10 @@ const CLOSING =
           <span class="board__rank" :class="{ 'board__rank--top': entry.rank <= 3 }">{{ entry.rank }}</span>
           <span class="board__name">{{ entry.displayName }}</span>
           <span class="board__dept">{{ entry.department }}</span>
-          <span class="board__meta">{{ entry.gamesThisWeek }} 局 · 线索 {{ entry.clueCount }}</span>
+          <span class="board__meta">{{ entry.gamesThisWeek }} 局</span>
           <span class="board__score">{{ entry.bestScore }}</span>
         </li>
       </ol>
-      <p v-if="props.report.server?.usedRiskyPot && !props.report.confessedClean" class="summary__purge-note">
-        本局你投过腐败 / 擦边壶，已被记录在案——当前分数只是暂时保留，等待下一次「大清洗」。
-      </p>
-      <p v-else-if="props.report.confessedClean" class="summary__purge-note">
-        你曾主动交代、此后再未伸手，从宽处理：本局成绩有效，「大清洗」不会波及。
-      </p>
-    </section>
-
-    <!-- 侥幸逃脱 -->
-    <section v-if="report.escaped" class="summary__section">
-      <h3 class="summary__heading summary__heading--escape">侥幸逃脱</h3>
-      <p class="summary__desc">
-        你投过腐败 / 擦边壶，却没有留下线索——这只是运气好，不是真的干净。
-      </p>
-    </section>
-
-    <!-- 主动交代且此后再未伸手 -->
-    <section v-if="report.confessedClean" class="summary__section">
-      <h3 class="summary__heading summary__heading--confess">主动交代</h3>
-      <p class="summary__desc">
-        你在还有机会回头的时候选择了交代，此后再未伸手——扣除的是分数，放下的是侥幸。
-        从宽处理：本局成绩有效，「大清洗」不会波及你。
-      </p>
-    </section>
-
-    <!-- 被清零 -->
-    <section v-if="report.zeroed" class="summary__section">
-      <h3 class="summary__heading summary__heading--zero">被清零</h3>
-      <p class="summary__desc">线索达 2 条及以上，总分清零，接受重处分。</p>
     </section>
 
     <!-- 30 秒感受 -->
@@ -130,27 +115,27 @@ const CLOSING =
   color: var(--color-ink-soft);
   letter-spacing: 0;
 }
-.summary__heading--escape {
-  color: var(--color-gold);
-}
-.summary__heading--confess {
-  color: var(--color-green);
-}
-.summary__heading--zero {
-  color: var(--color-red);
-}
 .summary__desc {
   font-size: 13px;
   color: var(--color-ink-soft);
 }
-.summary__purge-note {
-  margin-top: var(--gap-sm);
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  background: rgba(158, 43, 37, 0.08);
-  font-size: 12px;
+.summary__facts {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
   line-height: 1.7;
+  color: var(--color-ink);
+}
+.summary__facts li::before {
+  content: '·';
+  margin-right: 8px;
   color: var(--color-red);
+  font-weight: 700;
+}
+.summary__facts strong {
+  color: var(--color-green);
 }
 
 /* —— 排行榜 —— */
@@ -200,7 +185,7 @@ const CLOSING =
   color: var(--color-ink-soft);
   flex-shrink: 0;
   /* 数字位数不同会导致上下行错位：固定宽度 + 右对齐 + 等宽数字 */
-  min-width: 84px;
+  min-width: 40px;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
@@ -242,4 +227,3 @@ const CLOSING =
   letter-spacing: 0.04em;
 }
 </style>
-

@@ -8,7 +8,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/** 投掷记录实体：对应 throw_records 表，每轮投壶一行 */
+/** 轮次记录实体：对应 throw_records 表，每轮作答（+答对时的投壶）一行 */
 @Data
 @TableName("throw_records")
 public class ThrowRecord {
@@ -20,18 +20,21 @@ public class ThrowRecord {
   private Integer roundNo;
   private String sceneId;
 
-  /** CORRUPT / EDGE / CLEAN */
+  /** 玩家选择的选项编号（a/b/c） */
+  private String optionKey;
+
+  /** 选项是否答对：答错本题 0 分，不投壶 */
+  private Boolean optionCorrect;
+
+  /** EASY / MID / HARD（仅答对时有值，答错为 null） */
   private String potType;
 
-  /** 松手时指针位置 0~1 */
+  /** 松手时指针位置 0~1（仅答对时有值） */
   private BigDecimal pointerPos;
 
   private Boolean inZone;
   private Boolean hit;
   private Integer scoreGained;
-
-  /** NONE / SAFE / CLUE */
-  private String cardType;
 
   private LocalDateTime createdAt;
 }

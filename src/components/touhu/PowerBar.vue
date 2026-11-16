@@ -172,7 +172,7 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* 文档流内布局：位于壶区正下方，不遮挡线索卡托盘 */
+/* 文档流内布局：位于壶区正下方 */
 .power-bar {
   width: 100%;
   display: flex;

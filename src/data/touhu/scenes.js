@@ -7,9 +7,11 @@
  *   category:   string  廉洁风险类别（用于分维度统计答题数据）
  *   difficulty: number  难度 1（直观）~ 3（边界），参考题库配比：简单 60% / 警醒 25% / 反直觉 15%
  *   scene:      string  情景描述（第二人称，项目一线真实纠结场景）
- *   options:    array   三个选项，分别映射三个壶：
- *                       corrupt = 腐败壶（违规）、edge = 擦边壶（灰色）、clean = 廉洁壶（合规）
- *                       key 为选项编号，顺序与 pot 的对应关系固定，展示时随机打乱
+ *   options:    array   三个选项，pot 字段为出题审核元数据：
+ *                       corrupt = 违规做法、edge = 灰色做法、clean = 合规做法（即正确答案）
+ *                       运行时选项不再映射壶（投壶已改为答对后的定分环节），
+ *                       生成种子 SQL 时由 scripts/gen-seed-questions.mjs 按 pot==='clean'
+ *                       推导 correct 标记；key 为选项编号，展示时随机打乱
  *   hint:       string  教育点解析，投掷后展示
  *   source:     string  题目来源，便于回溯审核
  * }

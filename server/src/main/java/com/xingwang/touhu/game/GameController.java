@@ -2,7 +2,6 @@ package com.xingwang.touhu.game;
 
 import com.xingwang.touhu.auth.UserContext;
 import com.xingwang.touhu.common.Result;
-import com.xingwang.touhu.game.dto.CardViewRequest;
 import com.xingwang.touhu.game.dto.FinishVO;
 import com.xingwang.touhu.game.dto.HistoryItemVO;
 import com.xingwang.touhu.game.dto.QuizRequest;
@@ -24,10 +23,8 @@ import java.util.List;
  * 游戏接口（全部需要登录令牌）：
  *   POST /api/game/sessions                    开局
  *   GET  /api/game/sessions/current            查询进行中的对局（继续上局）
- *   POST /api/game/sessions/{id}/throws        上报一轮投掷
+ *   POST /api/game/sessions/{id}/throws        上报一轮作答（答错）或作答+投壶（答对）
  *   POST /api/game/sessions/{id}/quiz          上报一轮答题
- *   POST /api/game/sessions/{id}/card-views    上报付费查看
- *   POST /api/game/sessions/{id}/confess       主动交代
  *   POST /api/game/sessions/{id}/finish        终局清算
  *   GET  /api/game/my/history                  我的历史战绩
  */
@@ -57,18 +54,6 @@ public class GameController {
   @PostMapping("/sessions/{id}/quiz")
   public Result<Void> reportQuiz(@PathVariable Long id, @Valid @RequestBody QuizRequest req) {
     gameService.reportQuiz(UserContext.getUserId(), id, req);
-    return Result.ok();
-  }
-
-  @PostMapping("/sessions/{id}/card-views")
-  public Result<Void> reportCardView(@PathVariable Long id, @Valid @RequestBody CardViewRequest req) {
-    gameService.reportCardView(UserContext.getUserId(), id, req);
-    return Result.ok();
-  }
-
-  @PostMapping("/sessions/{id}/confess")
-  public Result<Void> confess(@PathVariable Long id) {
-    gameService.confess(UserContext.getUserId(), id);
     return Result.ok();
   }
 

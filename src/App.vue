@@ -96,7 +96,7 @@ function onQuit() {
     <nav v-if="navOpen" class="global-nav" @click="navOpen = false">
       <div class="global-nav__panel" @click.stop>
         <RouterLink to="/" class="global-nav__link">星球首页</RouterLink>
-        <RouterLink to="/game" class="global-nav__link">投壶拒腐败</RouterLink>
+        <RouterLink to="/game" class="global-nav__link">投壶拒腐</RouterLink>
         <RouterLink to="/quiz" class="global-nav__link">红线百斩</RouterLink>
         <RouterLink to="/scenario" class="global-nav__link">看得见</RouterLink>
         <RouterLink to="/exhibition" class="global-nav__link" @click="navOpen = false">廉洁展馆</RouterLink>

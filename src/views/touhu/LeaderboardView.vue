@@ -1,7 +1,7 @@
 <script setup>
 /**
  * 本周排行榜（独立页）
- * - 自然周榜：本周已完结、未被清洗的对局，每人取最高分
+ * - 自然周榜：本周已完结的对局，每人取最高分
  * - 数据来自后端 /api/leaderboard，与结算页内嵌榜单同源
  */
 import { ref, onMounted } from 'vue'
@@ -12,12 +12,6 @@ import SvgIcon from '@/components/common/SvgIcon.vue'
 const auth = useAuthStore()
 const leaderboard = ref(null) // null=加载中 []=空
 const loadError = ref(false)
-
-const penaltyLabel = {
-  NONE: '平安着陆',
-  LIGHT: '轻处分',
-  HEAVY: '重处分',
-}
 
 async function load() {
   loadError.value = false
@@ -40,9 +34,7 @@ onMounted(load)
           <SvgIcon name="refresh" :size="16" />
         </button>
       </h2>
-      <p class="board-page__note">
-        每周一 00:00 重置；投过腐败 / 擦边壶且未主动交代者，成绩只是暂时保留，等待「大清洗」。
-      </p>
+      <p class="board-page__note">每周一 00:00 重置，每人取本周最高分上榜。</p>
 
       <p v-if="loadError" class="board-page__empty">排行榜加载失败，请稍后重试。</p>
       <p v-else-if="leaderboard === null" class="board-page__empty">加载中…</p>
@@ -60,9 +52,7 @@ onMounted(load)
           <span class="board__rank" :class="{ 'board__rank--top': entry.rank <= 3 }">{{ entry.rank }}</span>
           <span class="board__name">{{ entry.displayName }}</span>
           <span class="board__dept">{{ entry.department }}</span>
-          <span class="board__meta">
-            {{ entry.gamesThisWeek }} 局 · 线索 {{ entry.clueCount }} · {{ penaltyLabel[entry.penalty] || entry.penalty }}
-          </span>
+          <span class="board__meta">{{ entry.gamesThisWeek }} 局</span>
           <span class="board__score">{{ entry.bestScore }}</span>
         </li>
       </ol>

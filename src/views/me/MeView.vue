@@ -2,8 +2,8 @@
 /**
  * 我的 · 战绩页
  * - 用户信息（姓名/部门）
- * - 汇总统计：本周场次、本周最高分、总场次、被清洗次数
- * - 逐局明细：得分、线索、处分、清风令；被大清洗清零的局有标记
+ * - 汇总统计：本周场次、本周最高分、总场次
+ * - 逐局明细：得分、清风令
  * 数据全部来自后端 /api/game/my/history
  */
 import { ref, computed, onMounted } from 'vue'
@@ -35,20 +35,12 @@ const stats = computed(() => {
   const list = history.value || []
   const since = weekStart()
   const thisWeek = list.filter((h) => new Date(h.finishedAt).getTime() >= since)
-  const validThisWeek = thisWeek.filter((h) => !h.purged)
   return {
     gamesThisWeek: thisWeek.length,
-    bestThisWeek: validThisWeek.length ? Math.max(...validThisWeek.map((h) => h.finalScore)) : 0,
+    bestThisWeek: thisWeek.length ? Math.max(...thisWeek.map((h) => h.finalScore)) : 0,
     total: list.length,
-    purgedCount: list.filter((h) => h.purged).length,
   }
 })
-
-const penaltyLabel = {
-  NONE: '平安着陆',
-  LIGHT: '轻处分',
-  HEAVY: '重处分',
-}
 
 function formatTime(iso) {
   if (!iso) return ''
@@ -83,12 +75,6 @@ function formatTime(iso) {
         <span class="me-page__stat-val">{{ stats.total }}</span>
         <span class="me-page__stat-key">总场次</span>
       </div>
-      <div class="me-page__stat">
-        <span class="me-page__stat-val" :class="{ 'me-page__stat-val--danger': stats.purgedCount > 0 }">
-          {{ stats.purgedCount }}
-        </span>
-        <span class="me-page__stat-key">被清洗</span>
-      </div>
     </section>
 
     <!-- 逐局明细 -->
@@ -97,25 +83,15 @@ function formatTime(iso) {
       <p v-if="loadError" class="me-page__empty">加载失败，请稍后重试。</p>
       <p v-else-if="history === null" class="me-page__empty">加载中…</p>
       <p v-else-if="history.length === 0" class="me-page__empty">
-        还没有战绩，去<RouterLink to="/game" class="me-page__link">投壶拒腐败</RouterLink>玩一局吧。
+        还没有战绩，去<RouterLink to="/game" class="me-page__link">投壶拒腐</RouterLink>玩一局吧。
       </p>
       <ul v-else class="record-list">
-        <li v-for="h in history" :key="h.sessionId" class="record" :class="{ 'record--purged': h.purged }">
+        <li v-for="h in history" :key="h.sessionId" class="record">
           <div class="record__main">
-            <span class="record__score" :class="{ 'record__score--purged': h.purged }">
-              {{ h.purged && h.originalScore != null ? h.originalScore : h.finalScore }}
-            </span>
+            <span class="record__score">{{ h.finalScore }}</span>
             <span class="record__meta">
-              {{ formatTime(h.finishedAt) }} · 线索 {{ h.clueCount }} · 清风令 {{ h.breezeTokens
-              }}<template v-if="h.purged && h.originalScore != null"> · 原 {{ h.originalScore }} 分已清零</template>
+              {{ formatTime(h.finishedAt) }} · 清风令 {{ h.breezeTokens }}
             </span>
-          </div>
-          <div class="record__tags">
-            <span v-if="h.purged" class="record__tag record__tag--purged">大清洗清零</span>
-            <span v-else class="record__tag" :class="`record__tag--${h.penalty.toLowerCase()}`">
-              {{ penaltyLabel[h.penalty] || h.penalty }}
-            </span>
-            <span v-if="h.confessed" class="record__tag record__tag--confess">已交代</span>
           </div>
         </li>
       </ul>
@@ -171,9 +147,6 @@ function formatTime(iso) {
   font-weight: 700;
   color: var(--color-ink);
 }
-.me-page__stat-val--danger {
-  color: var(--color-red);
-}
 .me-page__stat-key {
   font-size: 12px;
   color: var(--color-ink-soft);
@@ -209,9 +182,6 @@ function formatTime(iso) {
   border-radius: var(--radius-sm);
   background: rgba(244, 234, 216, 0.5);
 }
-.record--purged {
-  background: rgba(158, 43, 37, 0.06);
-}
 .record__main {
   display: flex;
   align-items: baseline;
@@ -228,40 +198,11 @@ function formatTime(iso) {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
-.record__score--purged {
-  color: var(--color-red);
-  text-decoration: line-through;
-}
 .record__meta {
   font-size: 12px;
   color: var(--color-ink-soft);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-.record__tags {
-  display: flex;
-  gap: 4px;
-  flex-shrink: 0;
-}
-.record__tag {
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 11px;
-  background: rgba(63, 92, 74, 0.12);
-  color: var(--color-green);
-}
-.record__tag--light {
-  background: rgba(184, 134, 63, 0.15);
-  color: var(--color-gold);
-}
-.record__tag--heavy,
-.record__tag--purged {
-  background: rgba(158, 43, 37, 0.12);
-  color: var(--color-red);
-}
-.record__tag--confess {
-  background: rgba(91, 113, 134, 0.15);
-  color: var(--color-slate-blue);
 }
 </style>

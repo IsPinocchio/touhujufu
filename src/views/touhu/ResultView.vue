@@ -1,16 +1,15 @@
 <script setup>
 /**
  * 结算与讲评页
- * - 玩家最终成绩、奖惩、廉洁文化课程
- * - 讲评（侥幸逃脱 / 被清零、30 秒感受、收尾语）
+ * - 玩家最终成绩、廉洁文化课程
+ * - 讲评（本局回顾、30 秒感受、收尾语）
  * - 战绩分享、重玩
- * - 与真实玩家的排名由后端服务提供（接入中）
  */
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/touhu'
 import { partyKnowledge } from '@/data/knowledge'
-import { COURSE_MIN_SCORE, COURSE_FOR_RISKY, COURSE_COUNT } from '@/data/touhu/config'
+import { COURSE_MIN_SCORE } from '@/data/touhu/config'
 import GameOverSummary from '@/components/touhu/GameOverSummary.vue'
 import SvgIcon from '@/components/common/SvgIcon.vue'
 
@@ -23,34 +22,11 @@ const copied = ref(false)
 const human = computed(() => store.player)
 const report = computed(() => store.finalReport)
 
-const penaltyLabel = {
-  none: '平安着陆',
-  light: '党纪轻处分',
-  heavy: '重处分',
-}
-
-/** 需要完成的廉洁文化课程次数（方案 2.6：分数过低或投过风险壶者均需领学；主动交代且此后收手者从宽，免领学） */
+/** 最终分数过低需领学廉洁文化课程 */
 const requiredCourses = computed(() => {
   const h = human.value
   if (!h) return 0
-  let n = 0
-  if (h.penalty === 'heavy') n = COURSE_COUNT.heavy
-  else if (h.penalty === 'light') n = COURSE_COUNT.light
-  if (h.score < COURSE_MIN_SCORE || (COURSE_FOR_RISKY && h.usedRiskyPot && !report.value?.confessedClean)) {
-    n = Math.max(n, 1)
-  }
-  return n
-})
-
-const courseReason = computed(() => {
-  const h = human.value
-  if (!h) return ''
-  const reasons = []
-  if (h.penalty === 'heavy') reasons.push('受重处分（线索达 2 条及以上）')
-  if (h.penalty === 'light') reasons.push('受轻处分（1 条线索）')
-  if (h.score < COURSE_MIN_SCORE) reasons.push(`最终分数低于 ${COURSE_MIN_SCORE} 分`)
-  if (COURSE_FOR_RISKY && h.usedRiskyPot && !report.value?.confessedClean) reasons.push('投过腐败 / 擦边壶')
-  return reasons.join('，')
+  return h.score < COURSE_MIN_SCORE ? 1 : 0
 })
 
 // 展示的课程条目
@@ -59,7 +35,7 @@ const courseItems = computed(() => partyKnowledge.slice(0, Math.max(requiredCour
 const shareText = computed(() => {
   const h = human.value
   if (!h) return ''
-  return `我在「投壶拒腐」中最终得分 ${h.score}，被巡察组发现 ${h.finalClueCount} 条线索（${penaltyLabel[h.penalty]}）。侥幸心理，害人不浅。`
+  return `我在「投壶拒腐」中答对 ${h.correctAnswerCount} 道情景题，投壶 ${h.throwCount} 投 ${h.hitCount} 中，最终得分 ${h.score}。守廉从每一次选择开始。`
 })
 
 onMounted(() => {
@@ -110,31 +86,27 @@ function goHome() {
           <span class="result__stat-key">最终得分</span>
         </div>
         <div class="result__stat">
-          <span class="result__stat-val">{{ human.finalClueCount }}</span>
-          <span class="result__stat-key">线索数</span>
+          <span class="result__stat-val">{{ human.correctAnswerCount }}</span>
+          <span class="result__stat-key">答对题数</span>
+        </div>
+        <div class="result__stat">
+          <span class="result__stat-val">{{ human.hitCount }}/{{ human.throwCount }}</span>
+          <span class="result__stat-key">投壶命中</span>
         </div>
         <div class="result__stat">
           <span class="result__stat-val">{{ human.breezeTokens }}</span>
           <span class="result__stat-key">清风令</span>
         </div>
-        <div class="result__stat">
-          <span class="result__stat-val result__stat-val--small">{{ penaltyLabel[human.penalty] }}</span>
-          <span class="result__stat-key">处理结果</span>
-        </div>
       </div>
 
-      <p v-if="human.breezeAward" class="result__breeze">
-        清风奖 +{{ store.breezeAward }}：全程未投腐败 / 擦边壶。
-      </p>
       <p v-if="human.breezeTokens > 0" class="result__breeze">
         清风令 ×{{ human.breezeTokens }}，清算 +{{ human.breezeTokens * store.tokenBonus }} 分。
       </p>
-      <p v-if="human.confessed" class="result__confessed">你曾主动交代：扣除了风险壶全部分数并消除了所有线索卡。</p>
 
       <!-- 廉洁文化课程 -->
       <div v-if="requiredCourses > 0" class="result__course">
         <p class="result__course-text">
-          {{ courseReason }}，需完成 <strong>{{ requiredCourses }}</strong> 次廉洁文化课程。
+          最终分数低于 {{ COURSE_MIN_SCORE }} 分，需完成 <strong>{{ requiredCourses }}</strong> 次廉洁文化课程。
         </p>
         <button class="btn btn--green btn--block" type="button" @click="courseModalOpen = true">
           完成廉洁文化课程
@@ -201,9 +173,6 @@ function goHome() {
   font-weight: 700;
   color: var(--color-ink);
 }
-.result__stat-val--small {
-  font-size: 17px;
-}
 .result__stat-key {
   font-size: 12px;
   color: var(--color-ink-soft);
@@ -212,10 +181,6 @@ function goHome() {
   font-size: 13px;
   color: var(--color-green);
   font-weight: 600;
-}
-.result__confessed {
-  font-size: 13px;
-  color: var(--color-ink-soft);
 }
 .result__course {
   display: flex;

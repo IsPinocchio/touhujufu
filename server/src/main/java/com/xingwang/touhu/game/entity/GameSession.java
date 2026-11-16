@@ -24,17 +24,7 @@ public class GameSession {
   private Integer currentRound;
 
   private Integer finalScore;
-  private Integer clueCount;
-  /** NONE / LIGHT / HEAVY */
-  private String penalty;
   private Integer breezeTokens;
-  private Boolean confessed;
-
-  /** 是否投过腐败/擦边壶（无论抽到什么卡）：大清洗的判定依据 */
-  private Boolean usedRiskyPot;
-  /** 是否已被大清洗清零 */
-  private Boolean purged;
-  private Long purgeBatchId;
 
   /** 本局抽题结果 JSON（开局生成，续玩原样返回） */
   private String questionPlan;

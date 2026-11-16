@@ -19,8 +19,8 @@ import java.util.Map;
 
 /**
  * 排行榜服务（自然周榜）。
- * 规则：本周（周一 00:00 起）已完结 + 未被清洗的对局中，每个用户取最高 finalScore 上榜，
- * 分数相同先达成者排前。每周一零点旧成绩自动下榜，与大清洗（周一凌晨）节奏一致。
+ * 规则：本周（周一 00:00 起）已完结的对局中，每个用户取最高 finalScore 上榜，
+ * 分数相同先达成者排前。每周一零点旧成绩自动下榜。
  * 100 人规模下直接内存计算即可；若未来玩家上万，可改为 SQL 聚合或定时物化。
  */
 @Service
@@ -46,14 +46,12 @@ public class LeaderboardService {
             .orderByDesc(GameSession::getFinalScore)
             .orderByAsc(GameSession::getFinishedAt));
 
-    // 每个用户：最佳局（未清洗，列表已排序，首次出现即最佳）+ 本周场次（含被清洗）
+    // 每个用户：最佳局（列表已排序，首次出现即最佳）+ 本周场次
     Map<Long, GameSession> best = new HashMap<>();
     Map<Long, Integer> games = new HashMap<>();
     for (GameSession s : sessions) {
       games.merge(s.getUserId(), 1, Integer::sum);
-      if (!Boolean.TRUE.equals(s.getPurged())) {
-        best.putIfAbsent(s.getUserId(), s);
-      }
+      best.putIfAbsent(s.getUserId(), s);
     }
 
     // 用户信息一次性查出，避免循环里逐条查库（N+1 问题）
@@ -76,7 +74,7 @@ public class LeaderboardService {
       entries.add(new LeaderboardEntryVO(++rank, s.getUserId(),
           u != null ? u.getDisplayName() : "未知用户",
           u != null ? u.getDepartment() : null,
-          s.getFinalScore(), s.getClueCount(), s.getPenalty(),
+          s.getFinalScore(),
           games.getOrDefault(s.getUserId(), 0), s.getFinishedAt()));
     }
     return entries;

@@ -6,10 +6,6 @@ import java.time.LocalDateTime;
 public record FinishVO(
     Long sessionId,
     Integer finalScore,
-    Integer clueCount,
-    String penalty,      // NONE / LIGHT / HEAVY
     Integer breezeTokens,
-    Boolean confessed,
-    Boolean usedRiskyPot, // 是否投过风险壶（前端可据此提示"已被记录在案"）
     LocalDateTime finishedAt) {
 }

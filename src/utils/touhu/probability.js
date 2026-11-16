@@ -1,40 +1,42 @@
+/*
+ * @date: Do not edit
+ * @lastEditors: liyankun
+ * @lastEditTime: YYYY-mm-dd
+ * @description: 
+ */
 /**
- * 概率判定、投掷解析与出手质量计算工具
+ * 投壶难度配置与出手质量计算工具
  * 核心数值全部集中在 POTS 与 data/touhu/config.js，便于调试与调整平衡性
- * 壶命中率与线索概率对应《投壶拒腐活动策划方案》2.2 / 2.5
+ *
+ * 机制口径（书记审定 2026-11）：三个壶为固定难度档位，答对选项后投中哪个壶得哪个分，
+ * 未投中保底得 MISS_SCORE 分。壶的分值与难度正相关：易壶口大好中但分低，难壶口小分高。
  */
 
-import { CLUE_ODDS, CLUE_ODDS_MARKED } from '@/data/touhu/config'
-
-// 三个壶的完整配置：难度模拟「腐败容易守廉难」——腐败壶口大易中、廉洁壶口小难中；
-// 三壶命中得分统一为 20 分（书记审定口径：结局只由选择与线索决定，不由壶的贵贱决定）
+// 三个壶的完整配置（难度参数沿用旧版三壶的手感：易←宽区间慢指针，难←窄区间快指针）
 export const POTS = {
-  corrupt: {
-    key: 'corrupt',
-    name: '腐败壶',
+  easy: {
+    key: 'easy',
+    name: '易',
     tagline: '口大 · 易中',
-    hitRate: 0.8, // 基础命中率
-    score: 20, // 命中得分（三壶统一）
-    bestZoneWidth: 0.3, // 蓄力最佳区间宽度（约 30%，宽）
-    traverseMs: 2000, // 指针单程耗时（毫秒，慢 -> 容易中）
+    score: 10, // 命中得分
+    bestZoneWidth: 0.25, // 蓄力最佳区间宽度（约 30%，宽）
+    traverseMs: 1800, // 指针单程耗时（毫秒，慢 -> 容易中）
   },
-  edge: {
-    key: 'edge',
-    name: '擦边壶',
+  mid: {
+    key: 'mid',
+    name: '中',
     tagline: '口适中',
-    hitRate: 0.6,
-    score: 20,
-    bestZoneWidth: 0.25, // 约 20%，中
-    traverseMs: 1800, // 中速
+    score: 15,
+    bestZoneWidth: 0.2, // 约 25%，中
+    traverseMs: 1400, // 中速
   },
-  clean: {
-    key: 'clean',
-    name: '廉洁壶',
+  hard: {
+    key: 'hard',
+    name: '难',
     tagline: '口小 · 难中',
-    hitRate: 0.3,
     score: 20,
-    bestZoneWidth: 0.2, // 约 12%，窄
-    traverseMs: 1500, // 快 -> 难中，守廉难
+    bestZoneWidth: 0.15, // 约 20%，窄
+    traverseMs: 1000, // 快 -> 难中
   },
 }
 
@@ -44,15 +46,6 @@ export const POT_KEYS = Object.keys(POTS)
 /** 数值夹取到 [min, max] 区间 */
 export function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value))
-}
-
-/**
- * 按概率判定一次事件是否发生
- * @param {number} probability 0~1 之间的概率
- * @returns {boolean}
- */
-export function roll(probability) {
-  return Math.random() < probability
 }
 
 /**
@@ -67,32 +60,6 @@ export function shuffle(arr) {
     ;[a[i], a[j]] = [a[j], a[i]]
   }
   return a
-}
-
-/**
- * 解析一次投掷结果
- * 命中腐败/擦边壶必抽一张卡，卡面按 clueOdds 概率为「留下线索」，其余为「平安无事」；
- * 廉洁壶不抽卡（方案 2.2）。
- * @param {'corrupt'|'edge'|'clean'} potType 所投的壶
- * @param {number|null} hitRateOverride 覆盖的基础命中率（蓄力出手质量后传入），缺省用壶默认值
- * @param {boolean} marked 玩家是否已被标记「组织注意到你了」（提升线索概率，方案 2.5）
- * @returns {{ hit: boolean, score: number, drawCard: boolean, cardType: 'safe'|'clue'|null, potType: string }}
- */
-export function resolveThrow(potType, hitRateOverride = null, marked = false) {
-  const pot = POTS[potType]
-  const hitRate = hitRateOverride ?? pot.hitRate
-  const hit = roll(hitRate)
-
-  let drawCard = false
-  let cardType = null
-
-  if (hit && potType !== 'clean') {
-    drawCard = true
-    const odds = marked ? CLUE_ODDS_MARKED : CLUE_ODDS
-    cardType = roll(odds[potType]) ? 'clue' : 'safe'
-  }
-
-  return { hit, score: hit ? pot.score : 0, drawCard, cardType, potType }
 }
 
 /**
@@ -127,12 +94,4 @@ export function evaluateQuality(quality) {
   if (quality >= 0.85) return '不错'
   if (quality >= 0.7) return '略有偏差'
   return '失手了'
-}
-
-/**
- * 计算「腐败壶」单次投掷实际留下线索的综合概率（用于讲评展示）
- * 命中率 × 卡面线索概率 = 80% × 50% = 40%（方案 2.2/2.3）
- */
-export function corruptClueOdds() {
-  return POTS.corrupt.hitRate * CLUE_ODDS.corrupt
 }

@@ -42,7 +42,3 @@ touhu:
     # JWT 签名密钥：至少 32 个字符。线上务必用环境变量覆盖！
     secret: ${JWT_SECRET:touhu-anti-corruption-secret-key-change-me-in-prod}
     expire-days: 7 # 登录令牌有效期（天）
-  purge:
-    # 大清洗定时任务 cron：默认每周一凌晨 3 点执行
-    # 6 个字段依次为：秒 分 时 日 月 星期
-    cron: ${PURGE_CRON:0 0 3 * * MON}

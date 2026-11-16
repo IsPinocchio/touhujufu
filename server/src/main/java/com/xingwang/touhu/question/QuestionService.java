@@ -94,15 +94,21 @@ public class QuestionService {
     }
   }
 
-  /** 转下发 payload：选项顺序打乱（记录进 plan，续玩顺序不变） */
+  /** 转下发 payload：选项顺序打乱（记录进 plan，续玩顺序不变）；校验每题恰好一个正确项 */
   private ScenePayload toPayload(SceneQuestion q) {
     try {
       ArrayNode arr = (ArrayNode) objectMapper.readTree(q.getOptionsJson());
       List<JsonNode> options = new ArrayList<>();
       arr.forEach(options::add);
+      long correctCount = options.stream().filter(o -> o.path("correct").asBoolean(false)).count();
+      if (correctCount != 1) {
+        throw new BizException("场景题 " + q.getId() + " 必须有且仅有一个正确选项");
+      }
       Collections.shuffle(options);
       return new ScenePayload(q.getId(), q.getCategory(), q.getDifficulty(),
           q.getSceneText(), options, q.getHint());
+    } catch (BizException e) {
+      throw e;
     } catch (Exception e) {
       throw new BizException("场景题 " + q.getId() + " 选项数据损坏");
     }

@@ -1,33 +1,22 @@
 package com.xingwang.touhu.common.enums;
 
 /**
- * 壶类型枚举：与前端 src/utils/probability.js 的 POTS 一一对应。
- * 数据库存储枚举的 name() 字符串（如 "CORRUPT"），可读性好。
+ * 壶类型枚举：与前端 src/utils/touhu/probability.js 的 POTS 一一对应。
+ * 三个壶为固定难度档位，答对选项后投中哪个壶得哪个分，未投中保底 MISS_SCORE。
+ * 数据库存储枚举的 name() 字符串（如 "EASY"），可读性好。
  */
 public enum PotType {
-  // 三壶命中得分统一 20 分（书记审定口径：得分不区分壶，结局由选择与线索决定）
-  CORRUPT(20, 10), // 腐败壶：命中 20 分，查看卡 10 分
-  EDGE(20, 5),     // 擦边壶：命中 20 分，查看卡 5 分
-  CLEAN(20, 0);    // 廉洁壶：命中 20 分，不抽卡
+  EASY(10), // 易：区间宽、指针慢，命中 10 分
+  MID(15),  // 中：命中 15 分
+  HARD(20); // 难：区间窄、指针快，命中 20 分
 
-  private final int score;    // 命中得分
-  private final int viewCost; // 查看该壶抽到的卡所需分数
+  private final int score; // 命中得分
 
-  PotType(int score, int viewCost) {
+  PotType(int score) {
     this.score = score;
-    this.viewCost = viewCost;
   }
 
   public int getScore() {
     return score;
-  }
-
-  public int getViewCost() {
-    return viewCost;
-  }
-
-  /** 是否为风险壶（腐败/擦边）：大清洗的判定依据 */
-  public boolean isRisky() {
-    return this == CORRUPT || this == EDGE;
   }
 }

@@ -1,9 +1,9 @@
 <script setup>
 /**
- * 三个壶的展示与选择区
- * 三壶同尺寸，展示顺序由 store.potOrder 决定（每轮随机打乱，防止固定位置暴露壶类型）
+ * 三个壶的展示与选择区（答对选项后的投壶定分环节）
+ * 三壶同尺寸，展示顺序由 store.potOrder 决定（每轮随机打乱，防止固定位置暴露难度档位）
+ * 壶下方标注难度与命中得分：易 10 分 / 中 15 分 / 难 20 分，未投中保底得分
  * 选壶 -> 蓄力（PowerBar）-> 松手投掷，松手后 emit('throw') 交回父组件播放动画
- * 壶下方展示当前场景映射来的选项文字（按 pot 字段匹配，半透明底色 + 配色）
  * 对外暴露 getPotMouthEl / shake，供 GameView 定位箭头与触发命中震动
  */
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
@@ -13,7 +13,6 @@ import { POTS } from '@/utils/touhu/probability'
 import { useGameStore } from '@/stores/touhu'
 
 const props = defineProps({
-  options: { type: Array, default: () => [] }, // [{ text, pot }] 当前场景选项
   disabled: { type: Boolean, default: false }, // 投掷动画中禁用，防误触
 })
 
@@ -36,7 +35,7 @@ const potSize = computed(() => Math.round(100 * potScale.value))
 const potEls = reactive({})
 
 // 命中震动状态
-const shaking = reactive({ corrupt: false, edge: false, clean: false })
+const shaking = reactive({ easy: false, mid: false, hard: false })
 
 // 松手后的出手评价（回传给 PowerBar 展示，非空即已投掷）
 const evaluation = ref('')
@@ -68,11 +67,6 @@ function shake(type) {
 }
 
 defineExpose({ getPotMouthEl, getPowerBtnEl, shake })
-
-/** 当前场景选项文字按 pot 字段映射到壶上 */
-function optionText(type) {
-  return props.options.find((o) => o.pot === type)?.text || ''
-}
 
 const isSelected = (type) => store.selectedPot === type
 const isCharging = (type) => store.isCharging && store.selectedPot === type
@@ -127,7 +121,8 @@ function onRelease(pos) {
             />
           </span>
           <span class="pot-btn__text" :class="`pot-btn__text--${colorOf(type)}`" :data-selected="isSelected(type)">
-            {{ optionText(type) }}
+            {{ POTS[type].name }} · {{ store.potScore(type) }} 分
+            <span class="pot-btn__tagline">{{ POTS[type].tagline }}</span>
           </span>
         </button>
       </div>
@@ -172,13 +167,13 @@ function onRelease(pos) {
   flex-direction: column;
   align-items: center;
 }
-.pot-slot--corrupt {
+.pot-slot--easy {
   z-index: 3;
 }
-.pot-slot--edge {
+.pot-slot--mid {
   z-index: 2;
 }
-.pot-slot--clean {
+.pot-slot--hard {
   z-index: 1;
 }
 
@@ -211,13 +206,20 @@ function onRelease(pos) {
   width: 100%;
   padding: 8px 6px;
   border-radius: var(--radius-sm);
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 600;
   line-height: 1.55;
   color: var(--color-ink);
   text-align: center;
   border: 1.5px solid transparent;
   transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease,
     font-weight var(--dur-fast) ease;
+}
+.pot-btn__tagline {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--color-ink-soft);
 }
 .pot-btn__text--copper {
   background: rgba(230, 184, 96, 0.16);

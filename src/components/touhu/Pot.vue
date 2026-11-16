@@ -9,7 +9,7 @@ import { POTS } from '@/utils/touhu/probability'
 import { POT_COLORS } from '@/utils/touhu/colors'
 
 const props = defineProps({
-  type: { type: String, required: true }, // corrupt | edge | clean
+  type: { type: String, required: true }, // easy | mid | hard
   theme: { type: String, default: 'copper' }, // 配色主题 copper | slate | green（每轮随机）
   size: { type: Number, default: 120 }, // 显示宽度（px）
   shaking: { type: Boolean, default: false }, // 命中震动

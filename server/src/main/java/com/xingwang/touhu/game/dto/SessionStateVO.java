@@ -9,28 +9,24 @@ import java.util.List;
 
 /**
  * 进行中对局的完整状态：续玩时前端据此重建游戏。
- * 题目（questionPlan）+ 已发生的明细记录（投掷/答题/看卡）+ 交代标记，
- * 前端按轮次重放即可还原得分、线索卡、清风令等全部状态。
+ * 题目（questionPlan）+ 已发生的明细记录（轮次作答/判断题），
+ * 前端按轮次重放即可还原得分、清风令等全部状态。
  */
 public record SessionStateVO(
     Long sessionId,
     Integer currentRound,
     String status,
-    Boolean confessed,
     QuestionPlan questionPlan,
     RulesSnapshot rules,
     @JsonProperty("throws") List<ThrowItem> throwsList,
     List<QuizItem> quizzes,
-    List<CardViewItem> cardViews,
     LocalDateTime startedAt) {
 
-  public record ThrowItem(Integer roundNo, String sceneId, String potType, Boolean inZone,
-                          Boolean hit, Integer scoreGained, String cardType) {
+  /** 一轮记录：答错时 pot 相关字段为 null、scoreGained 为 0 */
+  public record ThrowItem(Integer roundNo, String sceneId, String optionKey, Boolean optionCorrect,
+                          String potType, Boolean inZone, Boolean hit, Integer scoreGained) {
   }
 
   public record QuizItem(Integer roundNo, String quizId, Boolean correct) {
-  }
-
-  public record CardViewItem(Integer roundNo, Integer cost) {
   }
 }

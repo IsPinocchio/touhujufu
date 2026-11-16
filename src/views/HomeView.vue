@@ -13,7 +13,7 @@ const game = useGameStore()
 
 // 五块功能大陆：经纬度彼此拉开，形状各不相同
 const MODULES = [
-  { key: 'game', name: '投壶拒腐败', glyph: '壶', color: '#b03a30', desc: '九轮情景投壶', route: '/game', lat: 14, lon: -40 },
+  { key: 'game', name: '投壶拒腐', glyph: '壶', color: '#b03a30', desc: '九轮情景投壶', route: '/game', lat: 14, lon: -40 },
   { key: 'quiz', name: '红线百斩', glyph: '赛', color: '#4a7a58', desc: '党纪党规答题', route: '/quiz', lat: 46, lon: 70 },
   { key: 'scenario', name: '看得见', glyph: '剧', color: '#46618f', desc: '廉洁情景剧本杀', route: '/scenario', lat: -14, lon: 140 },
   { key: 'exhibition', name: '廉洁展馆', glyph: '馆', color: '#7a4a2b', desc: '沉浸警示展厅', route: '/exhibition', lat: 45, lon: -165 },

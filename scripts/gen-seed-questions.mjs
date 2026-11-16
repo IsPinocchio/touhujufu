@@ -9,6 +9,16 @@ const esc = (s) =>
 const { scenes } = await import(pathToFileURL('src/data/touhu/scenes.js').href)
 const { quizQuestions } = await import(pathToFileURL('src/data/touhu/quiz.js').href)
 
+// 新机制：options_json 不再存 pot 映射，改为 correct 标记（唯一正确项 = 原 pot==='clean' 的选项）。
+// scenes.js 中的 pot 字段保留为出题审核元数据，不参与运行时。
+const sceneOptionsJson = (s) => {
+  const cleanCount = s.options.filter((o) => o.pot === 'clean').length
+  if (cleanCount !== 1) {
+    throw new Error(`${s.id} 必须有且仅有一个 pot==='clean' 的正确选项，实际 ${cleanCount} 个`)
+  }
+  return JSON.stringify(s.options.map((o) => ({ key: o.key, text: o.text, correct: o.pot === 'clean' })))
+}
+
 const lines = []
 lines.push('-- 题目种子数据：由 src/data/touhu/scenes.js 与 src/data/touhu/quiz.js 通过 scripts/gen-seed-questions.mjs 生成')
 lines.push('-- ON DUPLICATE KEY UPDATE 保证改题后重新生成本文件即可同步更新存量数据（enabled 开关除外，保留后台手动下线状态）')
@@ -26,7 +36,7 @@ lines.push(
           esc(s.category),
           s.difficulty,
           esc(s.scene),
-          esc(JSON.stringify(s.options)),
+          esc(sceneOptionsJson(s)),
           esc(s.hint),
           esc(s.source),
           1,

@@ -1,6 +1,10 @@
 # 投壶拒腐 · 后端服务
 
-为「投壶拒腐」前端提供：账号登录、游戏过程数据上报、服务端清算、排行榜、定期大清洗。
+为「投壶拒腐」前端提供：账号登录、游戏过程数据上报、服务端清算、排行榜。
+
+机制口径（书记审定 2026-11）：每轮情景题 ABC 三选项只有唯一正确项，选错该题 0 分；
+选对后投壶定分——三壶难度档位 易=10 / 中=15 / 难=20 分，投中得壶分，未中保底 5 分；
+第 2/4/6/8 轮穿插法规判断题，答对得清风令，终局每枚 +10 分。
 
 ## 一、技术栈（为什么选这些）
 
@@ -22,19 +26,18 @@ server/
 ├── pom.xml                          # Maven 配置（≈ package.json）
 └── src/main/
     ├── resources/
-    │   ├── application.yml          # 配置文件（端口/数据库/密钥/清洗周期）
+    │   ├── application.yml          # 配置文件（端口/数据库/密钥）
     │   └── db/schema.sql            # 建表脚本（启动时自动执行）
-    │   └── db/seed_questions.sql    # 题目种子数据（启动时自动执行，INSERT IGNORE 幂等）
+    │   └── db/seed_questions.sql    # 题目种子数据（启动时自动执行，ON DUPLICATE KEY UPDATE 幂等）
     └── java/com/xingwang/touhu/
         ├── TouhuApplication.java    # 程序入口
         ├── common/                  # 通用层：统一返回体、异常处理、枚举
-        ├── config/                  # 配置层：登录拦截器、跨域、定时任务、初始化
+        ├── config/                  # 配置层：登录拦截器、跨域、初始化
         ├── auth/                    # 认证模块：注册/登录/JWT
         ├── user/                    # 用户表实体与 Mapper
         ├── question/                # 题目模块：场景题/判断题抽题
-        ├── game/                    # 游戏模块：对局、投掷、答题、交代、清算
-        ├── leaderboard/             # 排行榜模块
-        └── admin/                   # 管理模块：大清洗
+        ├── game/                    # 游戏模块：对局、作答、答题、清算
+        └── leaderboard/             # 排行榜模块
 ```
 
 每个业务模块内部再分：`entity`（对应数据库表）、`mapper`（数据库操作接口）、
@@ -45,7 +48,7 @@ server/
 
 - 知识竞赛写在 `com.xingwang.touhu.quiz`，情景剧本写在 `com.xingwang.touhu.scenario`；
   各模块内部按需要设置 `Controller`、`Service`、`entity/`、`mapper/`、`dto/`。
-- 新接口分别以 `/api/quiz/**`、`/api/scenario/**` 为前缀；模块管理接口放在各自模块，不堆入投壶的 `AdminController`。
+- 新接口分别以 `/api/quiz/**`、`/api/scenario/**` 为前缀。
 - 新表分别使用 `knowledge_*`、`scenario_*` 前缀，例如 `knowledge_quiz_questions`、`scenario_scripts`。
 - 现有 `question` 包、`QuizQuestion/QuizRecord`、`quiz_questions/quiz_records` 及 `/api/game/**/quiz`
   都是投壶内部实现，不作为公共题库复用，也不要为了新模块修改其名称。
@@ -67,7 +70,7 @@ mvn spring-boot:run
 # 或者用 IDEA 直接运行 TouhuApplication.main()
 ```
 
-启动时会自动：建表（`schema.sql`）→ 创建管理员账号 `admin / admin123`（**上线后请立即修改**）。
+启动时会自动：建表（`schema.sql`）→ 灌入题目种子 → 创建管理员账号 `admin / admin123`（**上线后请立即修改**）。
 
 验证：浏览器访问 `http://localhost:8080/api/leaderboard` 返回 `{"code":0,...}` 即成功。
 
@@ -75,13 +78,11 @@ mvn spring-boot:run
 
 ```
 users            用户表        —— 登录账号、姓名、角色（PLAYER/ADMIN）
-game_sessions    对局表        —— 每局一行：最终得分、线索数、处分、是否投过风险壶、是否被清洗、question_plan（本局抽题结果 JSON）
-throw_records    投掷记录表    —— 每轮一行：投的哪个壶、是否命中、抽到什么卡（大清洗的事实依据）
+game_sessions    对局表        —— 每局一行：最终得分、清风令数、question_plan（本局抽题结果 JSON）
+throw_records    轮次记录表    —— 每轮一行：选项作答（option_key/option_correct）
+                                 + 答对时的投壶（pot_type/pointer_pos/in_zone/hit，答错为 NULL）
 quiz_records     答题记录表    —— 第 2/4/6/8 轮判断题作答
-card_view_records 付费查看表   —— 花积分偷看线索卡的行为记录
-purge_batches    清洗批次表    —— 每次大清洗一行（定时/手动、波及多少局）
-purge_records    清洗明细表    —— 每局被清零前的原始得分，可追溯
-scene_questions  场景题表      —— 情景 + 选项（options_json 含壶映射）
+scene_questions  场景题表      —— 情景 + 选项（options_json 含 correct 正确项标记）
 quiz_questions   判断题表      —— 合规判断 + 解析 + 依据条文
 ```
 
@@ -95,19 +96,12 @@ quiz_questions   判断题表      —— 合规判断 + 解析 + 依据条文
 - 题目源文件在前端 `src/data/touhu/scenes.js`、`src/data/touhu/quiz.js`，改题后在仓库根目录执行
   `node scripts/gen-seed-questions.mjs` 重新生成 `seed_questions.sql`。
 
-### 大清洗的数据流（核心需求）
+### 作答与投壶一体上报
 
-1. 玩家投了腐败/擦边壶 → `throw_records` 如实记录 `pot_type`，
-   无论抽到「平安无事」还是「留下线索」；
-2. 对局完结时 → `game_sessions.used_risky_pot = 1`（冗余标记，筛查不用翻明细）；
-3. 逃脱者（抽到平安卡）分数正常保留、正常上排行榜；
-4. 每周一凌晨 3 点（cron 可配）或管理员手动触发 →
-   把 `used_risky_pot=1 且 (未交代 或 交代后仍投风险壶) 且 final_score>0 且未清洗` 的对局全部清零，
-   原始分数存档到 `purge_records`，排行榜自动刷新。
-
-> 政策口径（已定稿）：主动交代者**有条件豁免**大清洗——交代过、且交代后（第 4 轮后）
-> 未再投腐败/擦边壶的，从宽处理不再清零；交代完还继续伸手的，照样列入清洗范围
-> （`PurgeService.findTargets()` 中对 throw_records 的 NOT EXISTS 判定）。
+- 每轮只写一条 `throw_records`：答错时只带 `optionKey`（投壶字段为 NULL、得分 0）；
+  答对时带 `optionKey + potType/pointerPos/inZone`；
+- 选项对错由服务端按本局 question_plan 判定，客户端伪造投壶字段无法得分；
+- `(session_id, round_no)` 唯一键保证网络重试/重复点击不产生脏数据。
 
 ## 五、API 一览
 
@@ -125,33 +119,27 @@ quiz_questions   判断题表      —— 合规判断 + 解析 + 依据条文
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | POST | /api/game/sessions | 开局（抽题并下发 questionPlan：9 场景 + 4 判断，以及 rules 规则快照） |
-| GET | /api/game/sessions/current | 查询进行中的对局完整状态（questionPlan + throws/quizzes/cardViews/confessed，用于续玩重建） |
-| POST | /api/game/sessions/{id}/throws | 上报一轮投掷 |
+| GET | /api/game/sessions/current | 查询进行中的对局完整状态（questionPlan + throws/quizzes，用于续玩重建） |
+| POST | /api/game/sessions/{id}/throws | 上报一轮作答（答错）或作答+投壶（答对） |
 | POST | /api/game/sessions/{id}/quiz | 上报一轮答题 |
-| POST | /api/game/sessions/{id}/card-views | 上报付费查看 |
-| POST | /api/game/sessions/{id}/confess | 主动交代（仅第 4 轮后） |
 | POST | /api/game/sessions/{id}/finish | 终局清算（服务端重算分数） |
 | POST | /api/game/sessions/{id}/abandon | 放弃对局（退出游戏/重开时调用） |
 | GET | /api/game/my/history | 我的历史战绩 |
 
-### 排行榜与管理
+### 排行榜
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| GET | /api/leaderboard?limit=50 | 本周排行榜（自然周，周一 00:00 重置；每人取本周未清洗对局最高分，含 gamesThisWeek / clueCount / penalty 字段） |
-| GET | /api/admin/purge/preview | 【管理员】预览清洗名单 |
-| POST | /api/admin/purge | 【管理员】手动执行大清洗 |
-| GET | /api/admin/purge/batches | 【管理员】清洗历史 |
+| GET | /api/leaderboard?limit=50 | 本周排行榜（自然周，周一 00:00 重置；每人取本周最高分，含 gamesThisWeek 字段） |
 
 ## 六、防作弊设计
 
-- **分数服务端重算**：客户端只上报「投了哪个壶、指针是否进区间、抽到什么卡」，
-  命中与否、得分、最终清算全部由服务端按规则推导（`SettlementService`），
+- **分数服务端重算**：客户端只上报「选了哪个选项、投了哪个壶、指针是否进区间」，
+  选项对错、命中与否、得分、最终清算全部由服务端按规则推导（`SettlementService`），
   与前端 `data/touhu/config.js` 的数值严格对齐（开局时服务端会下发 rules 快照，
   前端展示数值以快照为准，双端漂移能直接被发现）；
 - **轮次顺序校验**：服务端跟踪 `current_round`，跳轮/重复上报会被拒绝；
-  答题必须在本轮投掷之后、题目必须与本局抽题结果一致；
-  主动交代必须在第 4 轮投掷与判断题都完成后；付费查看校验当前分数余额；
-- **唯一键幂等**：同一局同一轮的投掷/答题/查看记录有数据库唯一约束，
+  答题必须在本轮作答之后、题目必须与本局抽题结果一致；
+- **唯一键幂等**：同一局同一轮的作答/答题记录有数据库唯一约束，
   网络重试不会产生脏数据；
 - **并发开局防护**：同一用户的开局走 MySQL 命名锁，双击/重试不会产生两局进行中；
 - **登录限流**：同一账号密码连续错误 5 次锁定 10 分钟；
@@ -159,10 +147,8 @@ quiz_questions   判断题表      —— 合规判断 + 解析 + 依据条文
 
 ## 七、领学课程（线下执行）
 
-结算页会根据策划 2.6 提示玩家「需完成的廉洁文化课程次数」
-（重处分 2 次 / 轻处分 1 次 / 最终分低于 40 或投过风险壶至少 1 次）。
-**课程学习本身由活动方线下组织，系统不记录、不打卡**；
-管理员可在 purge_records / game_sessions 中核对需领学人员名单。
+结算页会在最终分数低于 40 分时提示玩家「需完成 1 次廉洁文化课程」。
+**课程学习本身由活动方线下组织，系统不记录、不打卡**。
 
 ## 八、部署建议（100 人规模）
 

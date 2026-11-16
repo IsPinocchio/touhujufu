@@ -9,7 +9,6 @@ import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/touhu'
 import { useAuthStore } from '@/stores/auth'
 import { touhuApi } from '@/utils/touhu/api'
-import { corruptClueOdds } from '@/utils/touhu/probability'
 
 const router = useRouter()
 const game = useGameStore()
@@ -21,7 +20,6 @@ const loading = ref(false)
 const errorMsg = ref('')
 
 const hasSave = computed(() => !!serverSession.value)
-const odds = computed(() => (corruptClueOdds() * 100).toFixed(1))
 
 onMounted(async () => {
   try {
@@ -53,11 +51,6 @@ async function startNew() {
 function continueGame() {
   if (!serverSession.value) return
   game.resumeFromServer(serverSession.value)
-  if (game.phase === 'finalInspection') {
-    // 9 轮已完成未清算，直接进对局页展示最终巡察弹窗
-    router.push('/game/play')
-    return
-  }
   router.push('/game/play')
 }
 </script>
@@ -74,8 +67,8 @@ function continueGame() {
     <!-- 主题引言 -->
     <section class="game-home__intro card anim-slide-up">
       <p class="game-home__quote">
-        腐败容易、守廉难——但只要你一直伸手，<br />
-        <strong>被抓只是时间问题。</strong>
+        先答对，再投准——<br />
+        <strong>守廉的每一步，都算分。</strong>
       </p>
     </section>
 
@@ -83,15 +76,11 @@ function continueGame() {
     <section class="game-home__rules card anim-slide-up">
       <h2 class="game-home__heading">规则简介</h2>
       <ul class="game-home__list">
-        <li>共 <strong>9 轮</strong>场景抉择，每轮选择投向一个壶：<strong>腐败壶</strong>（口大易中）、<strong>擦边壶</strong>、<strong>廉洁壶</strong>（口小难中）。三壶命中得分相同——分数不挑壶，挑壶的是你的选择。</li>
-        <li>命中腐败 / 擦边壶必抽一张<strong>线索卡</strong>扣在桌上——可以花钱查看，也可以赌它没事。</li>
+        <li>共 <strong>9 轮</strong>情景抉择，每轮从 ABC 三个做法中选出唯一正确的做法；<strong>选错本题 0 分</strong>，并现场揭晓正确答案与解析。</li>
+        <li>选对后进入<strong>投壶定分</strong>：三个壶难度不同——易 10 分、中 15 分、难 20 分，投中得对应分数，<strong>未投中保底 5 分</strong>。</li>
         <li>第 2/4/6/8 轮穿插<strong>法规判断题</strong>，答对得一枚清风令，最终清算每枚 +10 分。</li>
-        <li>第 4 轮后可<strong>主动交代</strong>；第 5 轮后<strong>中期巡察</strong>强制翻卡，有线索者将被「组织关注」，之后留下线索的概率大增。</li>
-        <li>第 9 轮后<strong>最终巡察</strong>：0 条线索平安着陆，1 条减半，2 条及以上清零。</li>
+        <li>最终得分 = 各轮得分 + 清风令加成；分数过低需完成廉洁文化课程。</li>
       </ul>
-      <p class="game-home__note">
-        腐败壶单次投掷实际留下线索的综合概率约为 <strong class="game-home__odds">{{ odds }}%</strong>——这是你手里的“赔率表”。
-      </p>
     </section>
 
     <!-- 操作区 -->
